@@ -1,0 +1,48 @@
+{
+  "id": "wiki_0008",
+  "title": "Employee IT Security Policy: Passwords and Authentication",
+  "content": "# Employee IT Security Policy: Passwords and Authentication\n\n**Category:** IT  \n**Applies To:** All Employees, Contractors, and Third-Party Vendors  \n**Effective Date:** Immediate  \n\n## Overview\n\nThis document outlines the mandatory security standards regarding password management and authentication protocols for all company systems. The integrity of our information assets relies heavily on the strength of user credentials. Weak authentication practices are the leading cause of data breaches, unauthorized access, and identity theft. \n\nAll personnel with access to company networks, devices, or data must adhere to these guidelines to ensure the confidentiality, integrity, and availability of organizational resources. Compliance with this policy is a condition of employment and system access.\n\n---\n\n## Password Management\n\nProtecting your password is the first line of defense against cyber threats. Employees are responsible for maintaining the secrecy and strength of their credentials at all times.\n\n### 1. Password Complexity Requirements\nAll passwords must meet the following complexity standards to resist brute-force attacks and guessing:\n\n*   **Minimum Length:** Passwords must be at least **12 characters** long.\n*   **Character Variety:** Passwords must include a combination of:\n    *   Uppercase letters (A-Z)\n    *   Lowercase letters (a-z)\n    *   Numbers (0-9)\n    *   Special symbols (e.g., !, @, #, $, %)\n*   **Uniqueness:** Passwords must not be reused across different systems (e.g., do not use your company password for personal email or social media).\n\n### 2. Password Rotation Cycle\nTo mitigate the risk of compromised credentials going undetected, passwords must be updated regularly.\n\n*   **Rotation Frequency:** All employees must change their network password every **90 days**.\n*   **Expiration Notices:** Users will receive automated notifications 14 days and 7 days prior to expiration.\n*   **History Enforcement:** The system will remember the last **5 passwords**. You cannot reuse any of your previous five passwords when creating a new one.\n\n### 3. Password Storage and Handling\nHow you store your password is as important as the password itself.\n\n*   **Prohibited Storage:** Never write passwords on sticky notes, whiteboards, or unencrypted digital files (such as Word documents or spreadsheets) stored on your desktop.\n*   **Approved Storage:** Employees are encouraged to use the company-approved **Password Manager** to store complex credentials securely.\n*   **Sharing:** Never share your password with anyone, including colleagues, managers, or IT staff. IT support will never ask for your password.\n\n### 4. Practical Examples\nTo help you create compliant passwords, refer to the examples below.\n\n| ❌ Weak Passwords (Prohibited) | ✅ Strong Passwords (Compliant) |\n| :--- | :--- |\n| `Password123` | `Tr0ub4dor&3` |\n| `Company2023` | `Blu3Coff3e!Mug` |\n| `qwerty` | `J7m#pL9$vX2z` |\n| `JohnDoe1980` | `Sunset$Drive#42` |\n\n**Tip:** Consider using a **passphrase**—a sequence of random words combined with numbers and symbols (e.g., `Correct-Horse-Battery-Staple!`)—which is easier to remember but hard to crack.\n\n---\n\n## Remote Access Security\n\nRemote access allows employees to connect to company resources from outside the physical office. Because these connections occur over public networks, they require heightened security measures.\n\n### 1. Multi-Factor Authentication (MFA)\nMulti-Factor Authentication adds a critical layer of security by requiring two or more verification methods to gain access.\n\n*   **Mandatory Usage:** MFA is **required** for all remote access connections, including Virtual Private Network (VPN) access, cloud-based applications, and remote desktop sessions.\n*   **Authentication Factors:** Access will require:\n    1.  **Something you know:** Your password.\n    2.  **Something you have:** A mobile device, hardware token, or authenticator app.\n*   **Approval Process:** When an MFA prompt is received, verify that you are the one attempting to log in before approving. If you receive an unexpected MFA request, deny it immediately and contact the IT Helpdesk.\n\n### 2. Accepted MFA Methods\nThe IT Department supports the following MFA methods. Employees should enroll in at least one method upon hiring.\n\n*   **Authenticator App:** (Preferred) Generates time-based codes (e.g., Microsoft Authenticator, Google Authenticator).\n*   **SMS/Text Message:** Sends a verification code to a registered mobile number.\n*   **Hardware Token:** A physical key provided by IT for users without mobile device access.\n\n### 3. Remote Device Hygiene\nWhen accessing company data remotely, ensure the device you are using is secure.\n\n*   **Public Wi-Fi:** Avoid accessing sensitive company data over public Wi-Fi networks (e.g., cafes, airports) without using the company VPN.\n*   **Device Lock:** Always lock your screen when stepping away from your device, even when working from home.\n*   **Software Updates:** Ensure your personal or company device has the latest operating system security patches installed before connecting to corporate resources.\n\n---\n\n## Compliance and Enforcement\n\nAdherence to this policy is monitored through automated system logs and security audits.\n\n*   **Account Lockout:** Accounts may be temporarily locked after multiple failed login attempts to prevent unauthorized access.\n*   **Violations:** Failure to comply with this policy may result in disciplinary action, up to and including termination of employment and legal action, depending on the severity of the breach.\n*   **Exceptions:** Any exceptions to this policy must be documented and approved in writing by the Chief Information Security Officer (CISO).\n\n## Support and Reporting\n\nIf you suspect your password has been compromised, or if you are experiencing issues with MFA, take immediate action.\n\n1.  **Reset Password:** Navigate to the self-service password reset portal immediately.\n2.  **Contact IT:** Reach out to the IT Helpdesk for assistance with MFA enrollment or locked accounts.\n    *   **Email:** `helpdesk@company.com`\n    *   **Phone:** ` ext. 5555`\n3.  **Report Phishing:** If you received a suspicious request for credentials, forward the email to `security@company.com`.\n\n---\n\n## Related Topics\n\n## Related Articles\n\n- [IT Equipment Request Process](/wiki/wiki_0002) - IT\n- [Company Vacation Policy 2024 Entitlement and Rules](/wiki/wiki_0007) - HR\n\n*   *Acceptable Use Policy*\n*   *Data Classification Standards*\n*   *Incident Response Procedure*\n*   *Remote Work Guidelines*",
+  "category": "IT",
+  "tags": [
+    "IT Security",
+    "Passwords",
+    "Authentication",
+    "MFA",
+    "Remote Access",
+    "Policy",
+    "Compliance",
+    "Cybersecurity",
+    "Employee Guidelines",
+    "Network Security"
+  ],
+  "url": "https://intranet.company.com/it/security",
+  "author": "LLM Wiki Compiler",
+  "version": "1.0",
+  "created_at": "2026-04-18T21:36:37.021380",
+  "updated_at": "2026-04-18T21:36:37.021380",
+  "metadata": {
+    "category": "IT",
+    "tags": [
+      "IT Security",
+      "Passwords",
+      "Authentication",
+      "MFA",
+      "Remote Access",
+      "Policy",
+      "Compliance",
+      "Cybersecurity",
+      "Employee Guidelines",
+      "Network Security"
+    ],
+    "word_count": 23,
+    "has_examples": false,
+    "complexity": "low",
+    "source_type": "text",
+    "document_hash": "e4cb77caaba82fb5d7fde5510fa93df6",
+    "compiled_at": "2026-04-18T21:36:37.021380",
+    "related_articles": [
+      "wiki_0002",
+      "wiki_0007"
+    ]
+  }
+}

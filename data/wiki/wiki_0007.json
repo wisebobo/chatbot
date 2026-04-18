@@ -1,0 +1,48 @@
+{
+  "id": "wiki_0007",
+  "title": "Company Vacation Policy 2024 Entitlement and Rules",
+  "content": "# Company Vacation Policy 2024 Entitlement and Rules\n\n**Category:** HR  \n**Effective Date:** January 1, 2024  \n**Applies To:** All Full-Time Employees\n\n## Overview\n\nThis document outlines the company's Vacation Policy for the 2024 fiscal year. It is designed to ensure a healthy work-life balance while maintaining operational continuity. The policy details vacation entitlements based on tenure, the procedural requirements for requesting time off, regulations regarding unused days, and distinctions between vacation leave and other types of absences. All employees are expected to familiarize themselves with these guidelines to facilitate smooth planning and approval processes.\n\n---\n\n## Vacation Entitlement\n\nVacation days are allocated annually based on an employee's continuous tenure with the company. Entitlement levels increase at specific milestone anniversaries to reward long-term commitment.\n\n### Tenure-Based Allocation\n\nThe following table defines the standard vacation allowance per calendar year:\n\n| Tenure Level | Duration of Service | Annual Vacation Entitlement |\n| :--- | :--- | :--- |\n| **Tier 1** | 0 – 2 Years | **10 Days** |\n| **Tier 2** | > 2 – 5 Years | **15 Days** |\n| **Tier 3** | > 5 Years | **20 Days** |\n\n### Accrual and Eligibility\n*   **Proration:** New employees joining mid-year will have their vacation days prorated based on their start date.\n*   **Availability:** Vacation days are typically available for use starting from the first day of employment, subject to manager approval and operational needs.\n*   **Anniversary Updates:** Entitlement levels update automatically on the employee's work anniversary date.\n\n> **Example:** *An employee hired on March 1, 2022, reaches their 2-year anniversary on March 1, 2024. Starting March 2, 2024, their entitlement increases from 10 days to 15 days for the remainder of the policy year.*\n\n---\n\n## Request Procedure\n\nTo ensure adequate staffing and project coverage, all vacation requests must follow a standardized submission and approval workflow.\n\n### Submission Steps\n\n1.  **Advance Notice:** Employees must submit vacation requests at least **2 weeks (10 business days)** prior to the intended start date.\n2.  **Manager Approval:** Requests require formal approval from the employee's direct manager. Approval is contingent upon team capacity and project deadlines.\n3.  **HR Processing:** Once approved by the manager, the request is forwarded to Human Resources for final processing and record-keeping in the HR Management System.\n\n### Best Practices for Approval\n*   **Peak Periods:** Requests during known peak business periods (e.g., end-of-quarter, product launches) may require additional lead time or may be subject to restrictions.\n*   **Conflict Resolution:** If multiple team members request the same dates, priority may be given based on submission timestamp or operational criticality.\n*   **Emergency Leave:** In cases of unforeseen emergencies, the 2-week notice requirement may be waived at the discretion of the Department Head.\n\n---\n\n## Unused Days Policy\n\nThe company encourages employees to utilize their vacation entitlement within the accrual year to promote rest and rejuvenation. However, provisions exist for carryover and termination payouts.\n\n### Carryover Limits\n*   **Maximum Carryover:** Employees are permitted to carry over a maximum of **5 unused vacation days** into the following calendar year.\n*   **Expiration:** Any unused days exceeding the 5-day limit will be forfeited at the end of the calendar year (December 31st).\n*   **Usage Priority:** Carried-over days must be utilized within the first quarter (Q1) of the new year.\n\n### Termination and Payout\n*   **Payout Condition:** Upon voluntary resignation or involuntary termination, all accrued but unused vacation days will be paid out.\n*   **Calculation:** The payout is calculated based on the employee's final base salary rate.\n*   **Exclusions:** Days carried over from the previous year are included in the payout calculation, provided they have not expired per the carryover policy.\n\n> **Example:** *An employee terminates employment with 12 unused vacation days. All 12 days are included in the final paycheck payout, regardless of the 5-day carryover limit, as the limit applies only to continuing employees.*\n\n---\n\n## Leave Distinctions\n\nIt is important to distinguish vacation leave from other types of authorized absences. Vacation days are deducted only from the specific vacation entitlement balance.\n\n### National Holidays\n*   **Exclusion:** Official National Holidays are **not** deducted from an employee's vacation entitlement.\n*   **Observance:** If a National Holiday falls during an approved vacation period, it is not counted as a vacation day. The vacation request should be adjusted to exclude the holiday.\n\n### Sick Leave\n*   **Separate Entitlement:** Sick leave is managed under a separate policy and is not drawn from the vacation allowance.\n*   **Conversion:** Vacation days cannot be converted to sick leave, and vice versa.\n*   **Extended Illness:** In cases of extended medical absence, employees should refer to the *Medical Leave of Absence Policy* rather than utilizing vacation entitlement.\n\n### Other Exclusions\nThe following absences do not consume vacation days:\n*   Jury Duty\n*   Bereavement Leave\n*   Company-mandated Closures\n\n---\n\n## Related Topics\n\n## Related Articles\n\n- [Annual Leave Policy](/wiki/wiki_0001) - HR\n- [Remote Work Policy](/wiki/wiki_0004) - HR",
+  "category": "HR",
+  "tags": [
+    "Vacation",
+    "Policy",
+    "Leave",
+    "Benefits",
+    "HR",
+    "Employees",
+    "Approval",
+    "Carryover",
+    "Holidays",
+    "Tenure"
+  ],
+  "url": "https://intranet.company.com/hr/vacation-policy",
+  "author": "LLM Wiki Compiler",
+  "version": "1.0",
+  "created_at": "2026-04-18T21:35:15.032011",
+  "updated_at": "2026-04-18T21:35:15.032011",
+  "metadata": {
+    "category": "HR",
+    "tags": [
+      "Vacation",
+      "Policy",
+      "Leave",
+      "Benefits",
+      "HR",
+      "Employees",
+      "Approval",
+      "Carryover",
+      "Holidays",
+      "Tenure"
+    ],
+    "word_count": 92,
+    "has_examples": false,
+    "complexity": "low",
+    "source_type": "text",
+    "document_hash": "05847cf9adec43400f26424a37ef70b8",
+    "compiled_at": "2026-04-18T21:35:15.032011",
+    "related_articles": [
+      "wiki_0001",
+      "wiki_0004"
+    ]
+  }
+}

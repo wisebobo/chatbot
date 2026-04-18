@@ -1,0 +1,20 @@
+{
+  "id": "wiki_0006",
+  "title": "Meeting Room Booking System",
+  "content": "# Meeting Room Booking System\n\n## Overview\nGuide to booking conference rooms and meeting spaces.\n\n## Available Rooms\n\n### Small Rooms (2-4 people)\n- Room A101, A102, A103\n- Equipped with whiteboard\n- TV screen for presentations\n\n### Medium Rooms (5-10 people)\n- Room B201, B202\n- Video conferencing capability\n- Whiteboard and flipchart\n\n### Large Rooms (10-20 people)\n- Room C301 (Board Room)\n- Full AV setup\n- Catering available\n\n### Training Room (20-30 people)\n- Room D401\n- Projector and sound system\n- Movable furniture\n\n## Booking Process\n\n### Method 1: Online Portal\n1. Visit: https://rooms.company.com\n2. Select date and time\n3. Choose room based on capacity\n4. Add meeting details\n5. Submit booking\n\n### Method 2: Outlook Calendar\n1. Open Outlook calendar\n2. Create new meeting\n3. Add room as resource\n4. Send invitation\n\n### Method 3: Reception\n- Call reception: ext. 1000\n- Provide meeting details\n- Receptionist will book for you\n\n## Booking Rules\n- Maximum 4 hours per booking\n- Book no more than 2 weeks in advance\n- Cancel if not needed (free up for others)\n- No-show after 15 minutes = automatic cancellation\n\n## Equipment Requests\nRequest additional equipment when booking:\n- Video conferencing setup\n- Additional monitors\n- Microphones/speakers\n- Catering services\n\n## During Meeting\n- Start on time\n- Keep noise levels reasonable\n- Clean up after use\n- Report any issues to facilities\n\n## Recurring Meetings\n- Can book recurring slots (weekly/monthly)\n- Review quarterly to release unused slots\n- Priority given to client-facing meetings\n\n## Support\nFacilities team: facilities@company.com",
+  "category": "Operations",
+  "tags": [
+    "meeting",
+    "booking",
+    "rooms",
+    "facilities"
+  ],
+  "url": "/wiki/operations/meeting-rooms",
+  "author": "Facilities Team",
+  "version": "1.2",
+  "created_at": "2026-04-18T21:17:40.637018",
+  "updated_at": "2026-04-18T21:17:40.637018",
+  "metadata": {
+    "department": "Facilities & Operations"
+  }
+}

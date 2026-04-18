@@ -1,0 +1,21 @@
+{
+  "id": "wiki_0002",
+  "title": "IT Equipment Request Process",
+  "content": "# IT Equipment Request Process\n\n## Overview\nThis document outlines the process for requesting IT equipment including laptops, monitors, peripherals, and software.\n\n## Standard Equipment\nAll employees receive:\n- Laptop (standard configuration)\n- Monitor (upon request)\n- Keyboard and mouse\n- Headset (for remote workers)\n\n## Request Procedure\n\n### Step 1: Submit Request\nComplete the IT Equipment Request Form available on the intranet.\n\n### Step 2: Manager Approval\nYour manager must approve the request within 2 business days.\n\n### Step 3: IT Processing\nIT department will process approved requests within 5 business days.\n\n### Step 4: Delivery/Collection\n- Office employees: Collect from IT desk\n- Remote employees: Equipment shipped to home address\n\n## Special Requests\nFor non-standard equipment or software:\n1. Provide business justification\n2. Include cost estimate\n3. Obtain department head approval\n\n## Equipment Return\nWhen leaving the company or upgrading equipment:\n1. Back up all data\n2. Return equipment to IT department\n3. Complete equipment return form\n\n## Support\nFor IT equipment issues, contact IT Helpdesk:\n- Email: ithelp@company.com\n- Phone: ext. 1234\n- Portal: https://support.company.com",
+  "category": "IT",
+  "tags": [
+    "equipment",
+    "hardware",
+    "request",
+    "it-support"
+  ],
+  "url": "/wiki/it/equipment-request",
+  "author": "IT Department",
+  "version": "1.5",
+  "created_at": "2026-04-18T21:17:40.635181",
+  "updated_at": "2026-04-18T21:17:40.635181",
+  "metadata": {
+    "department": "Information Technology",
+    "last_review": "2024-06-15"
+  }
+}

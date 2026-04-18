@@ -1,0 +1,48 @@
+{
+  "id": "wiki_0009",
+  "title": "Expense Report Submission and Processing Guidelines",
+  "content": "# Expense Report Submission and Processing Guidelines\n\n**Category:** Finance\n\n## Overview\n\nThis document outlines the standard operating procedures for submitting, approving, and processing employee expense reports. Adherence to these guidelines ensures timely reimbursement, maintains accurate financial records, and ensures compliance with company fiscal policies. All employees are expected to familiarize themselves with these requirements to avoid delays in payment or rejection of claims.\n\nThe following guidelines apply to all business-related expenses incurred by employees, contractors, and staff members authorized to spend on behalf of the organization.\n\n## Documentation Requirements\n\nAccurate documentation is the foundation of a compliant expense report. To ensure audits can be conducted smoothly and tax regulations are met, specific evidence must be attached to every claim.\n\n### Receipt Threshold\n**Receipts are mandatory for all individual expenses exceeding $25.** \n\nWhile expenses under this threshold do not strictly require a physical receipt, employees are encouraged to retain documentation for all transactions regardless of amount. This best practice simplifies record-keeping and protects the employee in the event of a detailed audit.\n\n### Valid Documentation\nA valid receipt must clearly display the following information:\n*   **Vendor Name:** The business where the purchase was made.\n*   **Date of Transaction:** Must match the date claimed on the report.\n*   **Itemized Details:** A list of goods or services purchased (e.g., specific menu items for meals, not just a total).\n*   **Total Amount:** The final charge including tax and tip.\n\n*Note: Credit card statements alone are **not** considered valid receipts as they do not provide itemized details.*\n\n### Digital vs. Physical Copies\nThe finance department accepts both physical and digital receipts. \n*   **Digital:** Photos or PDFs uploaded directly to the expense management system.\n*   **Physical:** Original paper receipts attached to a printed report (if applicable).\n\n> **Example:** \n> *   **Acceptable:** A photo of an itemized dinner bill totaling $45.00.\n> *   **Unacceptable:** A credit card slip showing only the total $45.00 without item details.\n\n### Lost Receipts\nIf a receipt is lost for an expense over **$25**, the employee must submit a *Lost Receipt Declaration Form*. This form requires a written explanation of the expense and must be approved by the department head. Frequent lost receipts may trigger a review of expense privileges.\n\n## Submission and Approval\n\nTimely submission and proper authorization are critical for maintaining cash flow and accurate monthly closing procedures.\n\n### Submission Timeline\n**Expense reports must be submitted within 30 days** of the expense being incurred. \n\n*   **Calculation:** The 30-day window begins on the date the transaction occurred, not the date the employee returns from travel.\n*   **Late Submissions:** Reports submitted after the 30-day window may be subject to delay until the next processing cycle. Consistent late submissions may require additional justification.\n\n### Approval Workflow\n**Manager approval is mandatory** for all expense reports before they are routed to Finance.\n\n1.  **Employee Submission:** The employee compiles expenses and attaches required documentation in the system.\n2.  **Manager Review:** The direct manager reviews the report for accuracy, business purpose, and policy compliance.\n3.  **Approval Action:** The manager must digitally sign or approve the report within the workflow system.\n4.  **Finance Routing:** Once approved by the manager, the report is automatically routed to the Finance Department.\n\n### Common Submission Errors\nTo prevent your report from being returned, avoid the following common mistakes:\n*   **Incorrect Cost Centers:** Charging expenses to the wrong project code.\n*   **Missing Descriptions:** Failing to explain the business purpose of the expense (e.g., \"Client Lunch with XYZ Corp\").\n*   **Duplicate Claims:** Submitting the same expense in multiple reports.\n\n> **Tip:** Submit your reports weekly rather than waiting until the end of the month. This reduces the administrative burden and ensures you stay within the **30-day** limit.\n\n## Payment Processing\n\nOnce an expense report has passed documentation checks and received managerial approval, it enters the payment processing phase managed by the Finance Department.\n\n### Processing Timeline\n**The Finance department processes payments within 10 business days** of receiving the approved report.\n\n*   **Business Days:** This timeline excludes weekends and public holidays.\n*   **Cut-off Dates:** Reports approved after the monthly cut-off date may be processed in the following cycle, potentially extending the wait time beyond 10 business days.\n\n### Reimbursement Methods\nPayments are typically issued via the employee's standard payroll direct deposit. \n*   **Standard Employees:** Reimbursement is added to the next available pay cycle following the 10-day processing window.\n*   **Contractors:** Reimbursement is issued via check or separate bank transfer, depending on the contract terms.\n\n### Status Tracking\nEmployees can track the status of their reimbursement through the expense management portal. Status indicators include:\n*   *Draft:* Report is being prepared.\n*   *Pending Approval:* Awaiting manager action.\n*   *Processing:* Received by Finance; within the **10 business day** window.\n*   *Paid:* Funds have been disbursed.\n\n### Disputes and Adjustments\nIf a portion of an expense report is rejected during processing, the employee will be notified via email. The rejected items will be removed from the payment, and the employee may resubmit those specific items with corrected documentation.\n\n## Summary of Key Deadlines\n\n| Action | Requirement | Responsibility |\n| :--- | :--- | :--- |\n| **Receipt Collection** | Required for expenses **over $25** | Employee |\n| **Report Submission** | Within **30 days** of expense | Employee |\n| **Approval** | **Mandatory** before Finance review | Manager |\n| **Payment Processing** | Within **10 business days** | Finance Dept |\n\n## Related Topics\n\n## Related Articles\n\n- [Expense Reimbursement Guidelines](/wiki/wiki_0003) - Finance\n- [Remote Work Policy](/wiki/wiki_0004) - HR",
+  "category": "Finance",
+  "tags": [
+    "expenses",
+    "receipts",
+    "reimbursement",
+    "policy",
+    "guidelines",
+    "approval",
+    "finance",
+    "submission",
+    "payment",
+    "compliance"
+  ],
+  "url": "https://intranet.company.com/finance/expenses",
+  "author": "LLM Wiki Compiler",
+  "version": "1.0",
+  "created_at": "2026-04-18T21:38:06.515540",
+  "updated_at": "2026-04-18T21:38:06.515540",
+  "metadata": {
+    "category": "Finance",
+    "tags": [
+      "expenses",
+      "receipts",
+      "reimbursement",
+      "policy",
+      "guidelines",
+      "approval",
+      "finance",
+      "submission",
+      "payment",
+      "compliance"
+    ],
+    "word_count": 23,
+    "has_examples": false,
+    "complexity": "low",
+    "source_type": "text",
+    "document_hash": "b730a7b50b495647f633d071e9cbf7ea",
+    "compiled_at": "2026-04-18T21:38:06.515540",
+    "related_articles": [
+      "wiki_0003",
+      "wiki_0004"
+    ]
+  }
+}

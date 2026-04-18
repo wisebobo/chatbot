@@ -1,0 +1,26 @@
+{
+  "id": "wiki_0005",
+  "title": "Code Review Best Practices",
+  "content": "# Code Review Best Practices\n\n## Overview\nGuidelines for conducting effective code reviews in our engineering teams.\n\n## Before Submitting for Review\n\n### Author Responsibilities\n- Ensure code compiles and passes all tests\n- Write clear commit messages\n- Add comments for complex logic\n- Update documentation if needed\n- Keep pull requests small (< 400 lines ideal)\n\n## Review Process\n\n### Timeline\n- Reviews should be completed within 24 hours\n- Mark as urgent if blocking deployment\n- Use @mentions for specific reviewers\n\n### What to Check\n\n#### Functionality\n- Does the code solve the intended problem?\n- Are edge cases handled?\n- Is error handling appropriate?\n\n#### Code Quality\n- Follows coding standards\n- No code duplication\n- Proper naming conventions\n- Appropriate abstraction level\n\n#### Performance\n- No obvious performance issues\n- Database queries optimized\n- Memory usage reasonable\n\n#### Security\n- No hardcoded secrets\n- Input validation present\n- SQL injection prevention\n- Authentication/authorization checks\n\n#### Testing\n- Unit tests included\n- Test coverage adequate\n- Integration tests if needed\n\n## Giving Feedback\n\n### Do's\n✓ Be constructive and specific\n✓ Explain why something should change\n✓ Suggest alternatives\n✓ Acknowledge good practices\n\n### Don'ts\n✗ Don't be critical without explanation\n✗ Don't nitpick trivial issues\n✗ Don't use harsh language\n✗ Don't delay reviews unnecessarily\n\n## Common Issues to Flag\n\n### Critical (Must Fix)\n- Security vulnerabilities\n- Breaking changes without migration\n- Missing error handling\n- Performance bottlenecks\n\n### Important (Should Fix)\n- Code style violations\n- Missing tests\n- Poor naming\n- Duplicated logic\n\n### Suggestions (Nice to Have)\n- Refactoring opportunities\n- Documentation improvements\n- Minor optimizations\n\n## Approval Process\n- Minimum 1 approval required\n- Senior dev approval for major changes\n- All comments must be resolved\n- CI/CD pipeline must pass\n\n## Tools\n- GitHub/GitLab for code review\n- SonarQube for static analysis\n- CodeClimate for quality metrics\n\n## Learning Resources\n- Internal coding standards doc\n- Language-specific style guides\n- Security best practices guide",
+  "category": "Engineering",
+  "tags": [
+    "code-review",
+    "best-practices",
+    "development",
+    "quality"
+  ],
+  "url": "/wiki/engineering/code-review",
+  "author": "Engineering Team",
+  "version": "1.8",
+  "created_at": "2026-04-18T21:17:40.636015",
+  "updated_at": "2026-04-18T21:17:40.636015",
+  "metadata": {
+    "department": "Engineering",
+    "applicable_languages": [
+      "Python",
+      "Java",
+      "JavaScript",
+      "Go"
+    ]
+  }
+}

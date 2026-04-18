@@ -1,0 +1,21 @@
+{
+  "id": "wiki_0003",
+  "title": "Expense Reimbursement Guidelines",
+  "content": "# Expense Reimbursement Guidelines\n\n## Overview\nThis policy covers reimbursement procedures for business-related expenses.\n\n## Eligible Expenses\n- Business travel (flights, hotels, ground transportation)\n- Client meals and entertainment\n- Conference and training fees\n- Office supplies (with prior approval)\n- Mobile phone bills (partial reimbursement)\n\n## Non-Eligible Expenses\n- Personal expenses\n- Alcoholic beverages (unless client meeting)\n- Traffic fines or parking violations\n- Gym memberships\n- Commuting costs\n\n## Submission Process\n\n### 1. Collect Receipts\nKeep original receipts for all expenses over $25.\n\n### 2. Complete Expense Report\n- Use the online expense system\n- Categorize each expense\n- Attach digital copies of receipts\n- Add business purpose for each item\n\n### 3. Manager Approval\nSubmit to your manager for approval within 30 days of expense.\n\n### 4. Finance Review\nFinance team reviews approved reports within 5 business days.\n\n### 5. Payment\nReimbursement processed via direct deposit within 10 business days.\n\n## Spending Limits\n- Meals: $50 per person per day\n- Hotels: Company negotiated rates preferred\n- Flights: Economy class for domestic, premium economy for international\n\n## Receipt Requirements\n- Digital photos acceptable\n- Must show date, amount, vendor, and items purchased\n- Credit card statements alone are not sufficient\n\n## Questions?\nContact Finance team: finance@company.com",
+  "category": "Finance",
+  "tags": [
+    "expense",
+    "reimbursement",
+    "receipts",
+    "finance"
+  ],
+  "url": "/wiki/finance/expense-reimbursement",
+  "author": "Finance Department",
+  "version": "3.0",
+  "created_at": "2026-04-18T21:17:40.635181",
+  "updated_at": "2026-04-18T21:17:40.635181",
+  "metadata": {
+    "department": "Finance",
+    "policy_number": "FIN-2024-001"
+  }
+}

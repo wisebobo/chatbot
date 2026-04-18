@@ -1,0 +1,21 @@
+{
+  "id": "wiki_0004",
+  "title": "Remote Work Policy",
+  "content": "# Remote Work Policy\n\n## Overview\nThis policy establishes guidelines for employees working remotely.\n\n## Eligibility\n- Full-time employees after probation period (3 months)\n- Role must be suitable for remote work\n- Manager approval required\n\n## Work Arrangements\n\n### Fully Remote\n- Work from home 5 days per week\n- Monthly office visits for team meetings\n\n### Hybrid\n- 2-3 days in office\n- 2-3 days remote\n- Schedule coordinated with team\n\n## Equipment and Setup\n- Company provides laptop and necessary peripherals\n- Employee responsible for internet connection\n- Ergonomic workspace recommended\n\n## Working Hours\n- Core hours: 10 AM - 3 PM (must be available)\n- Flexible outside core hours\n- Total 8 hours per day expected\n\n## Communication\n- Respond to messages within 2 hours during work hours\n- Attend all scheduled video meetings\n- Keep calendar up to date\n\n## Security Requirements\n- Use VPN for all company systems\n- Secure home network (WPA2/WPA3)\n- Lock computer when away\n- No public WiFi for work\n\n## Performance Expectations\n- Same performance standards as office work\n- Regular check-ins with manager\n- Deliverables tracked through project management tools\n\n## Support\n- IT support available remotely\n- HR available for policy questions\n- Manager for work-related concerns",
+  "category": "HR",
+  "tags": [
+    "remote-work",
+    "work-from-home",
+    "flexible",
+    "policy"
+  ],
+  "url": "/wiki/hr/remote-work-policy",
+  "author": "HR Department",
+  "version": "2.0",
+  "created_at": "2026-04-18T21:17:40.635688",
+  "updated_at": "2026-04-18T21:17:40.635688",
+  "metadata": {
+    "department": "Human Resources",
+    "effective_date": "2024-03-01"
+  }
+}

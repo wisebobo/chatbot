@@ -1,0 +1,49 @@
+{
+  "id": "wiki_0010",
+  "title": "Company IT Security Password and Access Guidelines",
+  "content": "# Company IT Security Password and Access Guidelines\n\n**Category:** IT  \n**Last Updated:** October 2023  \n**Audience:** All Employees\n\n## Overview\n\nThis document outlines the mandatory security standards regarding password management and system access for all company employees. Adherence to these guidelines is critical for protecting sensitive corporate data, maintaining client trust, and ensuring the integrity of our IT infrastructure. All personnel with access to company systems are responsible for understanding and implementing these protocols. Failure to comply may result in disciplinary action and increased vulnerability to cyber threats.\n\n---\n\n## Password Management\n\nStrong password hygiene is the first line of defense against unauthorized access. Employees must create, maintain, and protect their credentials according to the following standards.\n\n### Complexity Requirements\n\nTo resist brute-force attacks and dictionary cracking, all passwords must meet specific complexity criteria. A strong password is difficult for others to guess but easy for you to remember.\n\n*   **Minimum Length:** Passwords must contain at least **12 characters**.\n*   **Character Variety:** Passwords must include a combination of the following:\n    *   Uppercase letters (A-Z)\n    *   Lowercase letters (a-z)\n    *   Numbers (0-9)\n    *   Special characters (e.g., !, @, #, $, %)\n*   **Prohibited Content:** Do not use easily guessable information such as your name, username, birthdate, or common words like \"Password\" or \"Welcome.\"\n\n> **Example Guidelines**\n>\n> *   ❌ **Weak:** `John1985!` (Too short, contains name/year)\n> *   ❌ **Weak:** `Welcome1234` (Common word, predictable pattern)\n> *   ✅ **Strong:** `C0ff3e$Mug#Rain99` (16 chars, mixed complexity, pass-phrase style)\n> *   ✅ **Strong:** `Tr0ub4dor&3Secure` (17 chars, complex substitution)\n\n### Rotation Policy\n\nPassword rotation ensures that compromised credentials lose their utility over time. \n\n*   **Frequency:** Passwords must be changed every **90 days**.\n*   **Notifications:** The system will notify you 14 days prior to expiration. \n*   **History:** You cannot reuse any of your last 5 passwords.\n*   **Immediate Change:** If you suspect your password has been compromised, change it immediately regardless of the rotation schedule.\n\n### Password Sharing and Storage\n\nProtecting your credentials is an individual responsibility. \n\n*   **Strict Prohibition:** Sharing passwords with colleagues, managers, or external vendors is **strictly prohibited**. Even trusted teammates must use their own credentials to access systems.\n*   **Secure Storage:** Do not write passwords on sticky notes, whiteboards, or unencrypted text files on your desktop.\n*   **Recommended Tool:** Employees are encouraged to use the company-approved Password Manager to generate and store complex credentials securely.\n\n---\n\n## Access and Monitoring\n\nControlling who accesses company resources and monitoring for anomalies is essential for detecting and mitigating security incidents.\n\n### Multi-Factor Authentication (MFA)\n\nMulti-Factor Authentication adds an extra layer of security by requiring a second form of verification beyond just a password.\n\n*   **Remote Access Requirement:** MFA is **mandatory** for all remote access connections (e.g., VPN, cloud services, remote desktop).\n*   **Verification Methods:** Acceptable second factors include:\n    *   Authenticator app notifications (Preferred)\n    *   SMS code (If app is unavailable)\n    *   Hardware security key\n*   **Device Trust:** Do not select \"Trust this device\" on public or shared computers. Only trust personal or company-managed devices.\n\n### Incident Reporting Protocols\n\nVigilance is key to security. Employees are the eyes and ears of the IT Security team. If you observe anything unusual, you must act quickly.\n\n*   **What to Report:**\n    *   Suspicious emails (phishing attempts, unexpected attachments).\n    *   Unfamiliar login activity or password reset emails you did not request.\n    *   Lost or stolen company devices (laptops, mobile phones, security keys).\n    *   Unusual system behavior (pop-ups, slow performance, locked files).\n*   **How to Report:**\n    *   **Email:** Send details to `security@company.com`.\n    *   **Phone:** Call the IT Service Desk immediately for urgent matters.\n    *   **In-Client:** Use the \"Report Phishing\" button in your email client if applicable.\n*   **Response Time:** Reports should be made **immediately** upon discovery. Delaying reporting can allow threats to spread across the network.\n\n---\n\n## Related Topics\n\n*   ## Related Articles\n\n- [Employee IT Security Policy: Passwords and Authentication](/wiki/wiki_0008) - IT\n- [IT Equipment Request Process](/wiki/wiki_0002) - IT\n- [Company Vacation Policy 2024 Entitlement and Rules](/wiki/wiki_0007) - HR\n*   ## Related Articles\n\n- [Employee IT Security Policy: Passwords and Authentication](/wiki/wiki_0008) - IT\n- [IT Equipment Request Process](/wiki/wiki_0002) - IT\n- [Company Vacation Policy 2024 Entitlement and Rules](/wiki/wiki_0007) - HR\n*   ## Related Articles\n\n- [Employee IT Security Policy: Passwords and Authentication](/wiki/wiki_0008) - IT\n- [IT Equipment Request Process](/wiki/wiki_0002) - IT\n- [Company Vacation Policy 2024 Entitlement and Rules](/wiki/wiki_0007) - HR",
+  "category": "IT",
+  "tags": [
+    "Security",
+    "Password",
+    "MFA",
+    "Authentication",
+    "Policy",
+    "Compliance",
+    "Remote Access",
+    "IT",
+    "Guidelines",
+    "Protection"
+  ],
+  "url": null,
+  "author": "LLM Wiki Compiler",
+  "version": "1.0",
+  "created_at": "2026-04-18T21:45:43.049722",
+  "updated_at": "2026-04-18T21:45:43.049722",
+  "metadata": {
+    "category": "IT",
+    "tags": [
+      "Security",
+      "Password",
+      "MFA",
+      "Authentication",
+      "Policy",
+      "Compliance",
+      "Remote Access",
+      "IT",
+      "Guidelines",
+      "Protection"
+    ],
+    "word_count": 52,
+    "has_examples": true,
+    "complexity": "low",
+    "source_type": "text",
+    "document_hash": "529142f52b8813f263ee49e6201192d2",
+    "compiled_at": "2026-04-18T21:45:43.049722",
+    "related_articles": [
+      "wiki_0008",
+      "wiki_0002",
+      "wiki_0007"
+    ]
+  }
+}
