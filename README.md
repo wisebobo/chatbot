@@ -101,163 +101,33 @@ pytest tests/ -v --cov=app
 
 ### Workflow Nodes
 
+```mermaid
+graph TD
+    A[User Input] --> B[intent_recognition_node]
+    B -->|LLM Intent Analysis| C{Routing Decision}
+    C -->|Skill Required| D[skill_execution_node]
+    C -->|Direct Reply| E[response_generation_node]
+    D -->|Human Approval Needed?| F{Check Approval}
+    F -->|Yes - Pending| G[⏸️ WAITING_HUMAN]
+    F -->|No or Approved| E
+    G -->|Admin Approves| D
+    E -->|Generate Response| H[Output to User]
+    
+    style A fill:#e1f5ff
+    style H fill:#e1f5ff
+    style G fill:#fff3cd
+    style B fill:#d4edda
+    style D fill:#d4edda
+    style E fill:#d4edda
 ```
-User Input
-    ↓
-intent_recognition_node   ← Call LLM to recognize intent and decide routing
-    ↓ (conditional routing)
-skill_execution_node      ← Execute Control-M / Playwright and other skills
-    ↓                       (supports human-in-the-loop approval)
-response_generation_node  ← Stream natural language response generation
-    ↓
-Output to user
-```
+
+**Node Descriptions:**
+
+| Node | Responsibility |
+|------|---------------|
+| **intent_recognition_node** | Calls LLM to analyze user intent and determine routing strategy |
+| **skill_execution_node** | Executes registered skills (Control-M, Playwright, RAG, Wiki, etc.) |
+| **response_generation_node** | Generates natural language responses using LLM |
+| **Human-in-the-Loop** | Pauses workflow for risky operations requiring manual approval |
 
 ### Adding New Skills
-
-```python
-# 1. Inherit from BaseSkill
-from app.skills.base import BaseSkill, SkillOutput
-
-class MyNewSkill(BaseSkill):
-    name = "my_skill"
-    description = "Do something specific"
-    require_human_approval = False
-
-    async def execute(self, params):
-        # Implement your business logic
-        return SkillOutput(success=True, data={"result": "done"})
-
-# 2. Register in app/api/main.py
-skill_registry.register(MyNewSkill())
-```
-
-### Knowledge Base Search (RAG & Wiki)
-
-The project includes two complementary knowledge search skills:
-
-#### RAG (Retrieval-Augmented Generation)
-Supports retrieving information from unstructured enterprise documents using semantic search. Configure the Group AI Platform API before use:
-
-1. Edit `.env` file and set `RAG_API_URL` and `RAG_API_KEY`
-2. Fill in the actual API call logic in `app/skills/rag_skill.py` (see TODO comments)
-3. Restart the service to use
-
-For detailed integration guide, please refer to: [docs/RAG_INTEGRATION_GUIDE.md](docs/RAG_INTEGRATION_GUIDE.md)
-
-#### LLM Wiki
-
-Provides access to structured wiki knowledge base with curated articles and clear organization. **Works out of the box with local engine - no API required!**
-
-**Mode 1: Local Engine (Default - No Configuration Needed)** ✅
-- Uses built-in wiki engine with file-based storage
-- Pre-loaded with 6 sample articles (HR, IT, Finance policies)
-- Works immediately without any setup
-- Full control over your data
-
-**Mode 2: Remote API (Optional)**
-If your company provides a Group AI Platform Wiki API:
-1. Edit `.env` file and set `WIKI_API_URL` and `WIKI_API_KEY`
-2. System automatically switches to remote mode
-3. Restart the service
-
-For detailed guides:
-- [Local Wiki Engine Guide](docs/LOCAL_WIKI_ENGINE_GUIDE.md) - Complete local usage instructions
-- [Wiki Integration Guide](docs/WIKI_INTEGRATION_GUIDE.md) - Remote API integration
-
-**When to Use Which:**
-- **Wiki**: Official documentation, known policies, structured procedures
-- **RAG**: Exploratory queries, cross-document search, unstructured content
-
-**Example Conversations:**
-```
-User: What is the annual leave policy?
-Assistant: [Automatically calls wiki_search skill] → [Returns official HR policy article]
-           According to the Annual Leave Policy wiki article, employees are entitled to...
-
-User: How do I troubleshoot network issues?
-Assistant: [Automatically calls rag_search skill] → [Searches across IT documents]
-           Based on multiple IT support documents, here are common troubleshooting steps...
-```
-
-### Human-in-the-Loop
-
-The platform supports **dynamic human approval** based on operation type (following ITIL change management standards):
-
-#### How It Works
-
-Skills can define which operations require approval using `CHG_REQUIRE_ACTIONS`:
-
-```python
-class ControlMSkill(BaseSkill):
-    name = "controlm_job"
-    
-    # Operations requiring change management approval
-    CHG_REQUIRE_ACTIONS = {"run", "hold", "free", "delete"}
-    
-    async def requires_approval_for(self, params: Dict[str, Any]) -> bool:
-        """Dynamically check if this action needs approval"""
-        action = params.get("action", "").lower()
-        return action in self.CHG_REQUIRE_ACTIONS
-```
-
-#### Approval Behavior
-
-| Operation Type | Example | Requires Approval? | Reason |
-|---------------|---------|-------------------|--------|
-| **Read-only** | `status`, `query`, `list` | ❌ No | Safe operations execute immediately |
-| **Change** | `run`, `delete`, `update` | ✅ Yes | Risky operations need human approval |
-
-#### Workflow Example
-
-```bash
-# 1. Read-only query (executes immediately)
-User: "Check status of job DailyReport"
-→ Intent: controlm_job (action=status)
-→ Approval check: False (read-only)
-→ ✅ Executes without waiting
-
-# 2. Change operation (requires approval)
-User: "Run the monthly backup job"
-→ Intent: controlm_job (action=run)
-→ Approval check: True (change operation)
-→ ⏸️ Pauses with status: waiting_human
-
-# 3. Approve the pending request
-POST /api/v1/approval
-{
-  "session_id": "xxx",
-  "request_id": "yyy",
-  "approved": true
-}
-→ ✅ Continues execution after approval
-```
-
-#### Benefits
-
-- ✅ **Better UX**: Safe queries don't wait for approval
-- ✅ **Enhanced Security**: Risky operations still require review
-- ✅ **ITIL Compliant**: Follows enterprise change management standards
-- ✅ **Flexible**: Easy to customize per skill and operation
-
-For detailed implementation guide, see: [docs/DYNAMIC_HUMAN_APPROVAL_GUIDE.md](docs/DYNAMIC_HUMAN_APPROVAL_GUIDE.md)
-
-## 📊 API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/health` | Health check |
-| POST | `/api/v1/chat` | Standard chat |
-| POST | `/api/v1/chat/stream` | Streaming chat (SSE) |
-| POST | `/api/v1/approval` | Submit human approval |
-| GET | `/api/v1/metrics` | Prometheus metrics |
-
-## ⚙️ Production Configuration
-
-Replace `MemorySaver` in `.env` with PostgreSQL:
-
-```bash
-pip install langgraph-checkpoint-postgres
-```
-
-Call `get_postgres_checkpointer()` in `app/graph/graph.py` to initialize persistent checkpointer.
