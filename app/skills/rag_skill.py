@@ -66,10 +66,10 @@ class RagSkill(BaseSkill):
 
         try:
             # ============================================================
-            # TODO: 在此处填充公司 Group AI Platform 的 RAG API 调用逻辑
+            # TODO: Implement RAG API call logic for company Group AI Platform
             # ============================================================
             # 
-            # 示例代码结构（请根据实际情况修改）：
+            # Example code structure (modify according to actual requirements):
             #
             # async with httpx.AsyncClient() as client:
             #     response = await client.post(
