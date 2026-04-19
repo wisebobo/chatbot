@@ -1,0 +1,63 @@
+{
+  "entry_id": "qa_vpn_setup",
+  "title": "How to Set Up VPN for Remote Access?",
+  "aliases": [
+    "vpn configuration",
+    "remote access setup",
+    "connect to company network"
+  ],
+  "type": "qa",
+  "content": "# How to Set Up VPN for Remote Access?\n\n## Question\nHow do I configure VPN to securely access company resources when working remotely?\n\n## Answer\n\n### Prerequisites\n- Company-issued laptop or approved personal device\n- VPN client software (provided by IT)\n- Multi-factor authentication (MFA) enabled\n- Stable internet connection\n\n### Step-by-Step Setup\n\n#### Windows\n1. Download VPN client from IT portal: https://intranet.company.com/vpn/download\n2. Run installer and follow prompts\n3. Launch VPN client\n4. Enter company credentials (username@company.com)\n5. Complete MFA verification (push notification to authenticator app)\n6. Click \"Connect\"\n7. Verify connection status shows \"Connected\"\n\n#### macOS\n1. Open System Preferences > Network\n2. Click \"+\" to add new interface\n3. Select \"VPN\" as interface type\n4. Choose \"IKEv2\" as VPN type\n5. Enter server address: vpn.company.com\n6. Enter account credentials\n7. Enable \"Send all traffic over VPN connection\"\n8. Click \"Apply\" and \"Connect\"\n\n#### Mobile (iOS/Android)\n1. Install \"Company VPN\" app from App Store/Play Store\n2. Open app and enter company email\n3. Follow MFA verification steps\n4. Toggle VPN connection ON\n5. Verify lock icon appears in status bar\n\n### Troubleshooting\n\n**Issue: Cannot connect**\n- Check internet connection\n- Verify credentials are correct\n- Ensure MFA device is accessible\n- Try restarting VPN client\n\n**Issue: Slow connection**\n- Switch to wired connection if possible\n- Close bandwidth-intensive applications\n- Try different VPN server location\n\n**Issue: Connection drops frequently**\n- Update VPN client to latest version\n- Check firewall settings\n- Contact IT if problem persists\n\n### Security Best Practices\n- Always use VPN on public Wi-Fi\n- Never share VPN credentials\n- Log out when not in use\n- Keep VPN client updated\n- Report suspicious activity to IT Security\n\n### Related Resources\n- [VPN Security Policy](policy_vpn_security)\n- [Remote Work Best Practices](guide_remote_work)\n- [IT Security Guidelines](policy_it_security)\n\n### Support\nFor VPN issues:\n- IT Helpdesk: ext. 1234\n- Email: ithelp@company.com\n- Emergency: IT Security Hotline ext. 9999",
+  "summary": "Complete guide for setting up VPN on Windows, macOS, and mobile devices with troubleshooting tips.",
+  "parent_ids": [],
+  "related_ids": [
+    {
+      "entry_id": "policy_vpn_security",
+      "relation": "depends_on"
+    },
+    {
+      "entry_id": "guide_remote_work",
+      "relation": "related_to"
+    },
+    {
+      "entry_id": "policy_it_security",
+      "relation": "related_to"
+    }
+  ],
+  "tags": [
+    "it",
+    "vpn",
+    "remote-access",
+    "security",
+    "troubleshooting",
+    "faq"
+  ],
+  "sources": [
+    {
+      "source_id": "doc_it_2024_012",
+      "file_name": "VPN_User_Guide_v2.1.pdf",
+      "page": 3,
+      "content_snippet": "Section 1: Getting Started - To establish a secure connection...",
+      "url": "https://intranet.company.com/it/vpn-guide"
+    }
+  ],
+  "confidence": 0.93,
+  "status": "active",
+  "version": 2,
+  "create_time": "2024-02-20T13:30:00",
+  "update_time": "2024-10-05T09:45:00",
+  "feedback": {
+    "positive": 67,
+    "negative": 3,
+    "comments": [
+      "Very helpful! Saved me hours of troubleshooting",
+      "Screenshots would make it even better"
+    ]
+  },
+  "metadata": {
+    "department": "IT",
+    "difficulty_level": "beginner",
+    "estimated_time_minutes": 10,
+    "last_tested": "2024-10-01"
+  }
+}

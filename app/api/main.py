@@ -4,7 +4,7 @@ Provides RESTful API endpoints and supports both standard and streaming response
 """
 import logging
 import uuid
-from typing import AsyncIterator, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +21,7 @@ from app.skills.playwright_skill import PlaywrightSkill
 from app.skills.rag_skill import RagSkill
 from app.skills.wiki_skill import WikiSkill
 from app.state.agent_state import AgentState, WorkflowStatus
+from app.wiki.engine import LocalWikiEngine
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,18 @@ class HumanApprovalRequest(BaseModel):
     request_id: str = Field(..., description="Approval request ID")
     approved: bool = Field(..., description="Whether approved")
     reviewer_note: Optional[str] = Field(default=None, description="Reviewer notes")
+
+
+class WikiFeedbackRequest(BaseModel):
+    entry_id: str = Field(..., description="Wiki article entry_id")
+    is_positive: bool = Field(..., description="True for thumbs up, False for thumbs down")
+    comment: Optional[str] = Field(default=None, max_length=500, description="Optional user comment")
+
+
+class WikiFeedbackResponse(BaseModel):
+    success: bool
+    entry_id: str
+    feedback_summary: Dict[str, Any]
 
 
 class HealthResponse(BaseModel):
@@ -85,6 +98,10 @@ def create_app() -> FastAPI:
     skill_registry.register(RagSkill())
     skill_registry.register(WikiSkill())
     logger.info(f"Registered skills: {skill_registry.list_skill_names()}")
+
+    # Initialize wiki engine for feedback API (use same directory as example script)
+    wiki_engine = LocalWikiEngine(storage_dir="data/wiki_demo")
+    logger.info(f"Wiki engine initialized with {wiki_engine.get_article_count()} articles")
 
     prefix = settings.api.api_prefix
 
@@ -188,6 +205,113 @@ def create_app() -> FastAPI:
             }
         except Exception as e:
             logger.error(f"Approval error: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post(f"{prefix}/wiki/feedback", response_model=WikiFeedbackResponse, tags=["Wiki"])
+    async def submit_wiki_feedback(req: WikiFeedbackRequest):
+        """
+        Submit user feedback for a wiki article
+        
+        This implements the feedback loop for continuous knowledge improvement:
+        - Positive/negative feedback is recorded
+        - Confidence score is automatically recalculated
+        - Low-confidence articles can be flagged for re-compilation
+        
+        Args:
+            req: Feedback request with entry_id, is_positive, and optional comment
+            
+        Returns:
+            Feedback summary with updated statistics
+        """
+        try:
+            # Submit feedback to wiki engine
+            success = wiki_engine.submit_feedback(
+                entry_id=req.entry_id,
+                is_positive=req.is_positive,
+                comment=req.comment
+            )
+            
+            if not success:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"Wiki article not found: {req.entry_id}"
+                )
+            
+            # Get updated article for feedback summary
+            article = wiki_engine.get_article(req.entry_id)
+            if not article:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to retrieve updated article"
+                )
+            
+            return WikiFeedbackResponse(
+                success=True,
+                entry_id=req.entry_id,
+                feedback_summary={
+                    "positive": article.feedback.positive,
+                    "negative": article.feedback.negative,
+                    "total": article.feedback.positive + article.feedback.negative,
+                    "comments_count": len(article.feedback.comments),
+                    "updated_confidence": round(article.confidence, 3),
+                    "confidence_change": "increased" if req.is_positive else "decreased"
+                }
+            )
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Wiki feedback error: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get(f"{prefix}/wiki/{{entry_id}}/feedback", tags=["Wiki"])
+    async def get_wiki_feedback_stats(entry_id: str):
+        """
+        Get feedback statistics for a wiki article
+        
+        Args:
+            entry_id: Wiki article entry_id
+            
+        Returns:
+            Feedback statistics and confidence information
+        """
+        try:
+            article = wiki_engine.get_article(entry_id)
+            if not article:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Wiki article not found: {entry_id}"
+                )
+            
+            total_feedback = article.feedback.positive + article.feedback.negative
+            feedback_ratio = (
+                article.feedback.positive / total_feedback 
+                if total_feedback > 0 
+                else 0
+            )
+            
+            return {
+                "entry_id": entry_id,
+                "title": article.title,
+                "version": article.version,
+                "confidence": {
+                    "current": round(article.confidence, 3),
+                    "feedback_ratio": round(feedback_ratio, 3),
+                    "threshold_for_recompile": 0.7
+                },
+                "feedback": {
+                    "positive": article.feedback.positive,
+                    "negative": article.feedback.negative,
+                    "total": total_feedback,
+                    "comments": article.feedback.comments[-5:]  # Last 5 comments
+                },
+                "status": article.status.value if hasattr(article.status, 'value') else article.status
+            }
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get wiki feedback stats: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
 
     @app.get(f"{prefix}/metrics", tags=["Monitoring"])

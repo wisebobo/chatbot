@@ -1,0 +1,58 @@
+{
+  "entry_id": "conc_loan_prime_rate",
+  "title": "Loan Prime Rate (LPR) in China",
+  "aliases": [
+    "LPR",
+    "loan prime rate",
+    "benchmark interest rate",
+    "China LPR",
+    "mortgage reference rate"
+  ],
+  "type": "concept",
+  "content": "# Loan Prime Rate (LPR)\n\nThe **Loan Prime Rate (LPR)** is the primary benchmark interest rate for loans in China. It serves as a key reference point for pricing loans across commercial banks and is used to determine final interest rates based on borrower creditworthiness.\n\n## Key Features\n\n- **Publisher**: The National Interbank Funding Center, authorized by the People's Bank of China (PBOC).\n- **Publication Schedule**: Published on the 20th of each month; postponed if the date falls on a public holiday.\n- **Tenors**: Two standard terms are published:\n  - 1-year LPR\n  - Over-5-year LPR (now commonly referred to as 5-year LPR since 2023)\n\n## Usage in Banking\n\nCommercial banks use the LPR as their base rate and adjust it by adding or subtracting basis points depending on:\n- Customer credit score\n- Loan type (e.g., personal, corporate, mortgage)\n- Market conditions\n\nFor example, if the 5-year LPR is 3.85%, a bank might offer a mortgage at 3.85% + 50 basis points (i.e., 4.35%) for a borrower with average credit quality.\n\n## Recent Updates (2024)\n\n- **February 2024**: LPR reduced by 10 basis points to stimulate economic activity.\n- **July 2024**: Further reduction of 25 basis points, bringing the over-5-year LPR to a historic low of **3.85%**.\n\nThese adjustments reflect the PBOC’s monetary policy stance aimed at lowering corporate financing costs and supporting housing market stability.\n\n## Policy Impact\n\nThe LPR mechanism improves the transmission of monetary policy from the central bank to financial institutions and end borrowers. By anchoring loan rates to a transparent, regularly updated benchmark, it reduces uncertainty and enhances the efficiency of interest rate adjustments in response to macroeconomic goals.",
+  "summary": "The Loan Prime Rate (LPR) is China's primary benchmark interest rate for loans, published monthly by the National Interbank Funding Center. Used by banks to set customer loan rates, it supports monetary policy transmission and has recently been lowered to stimulate the economy.",
+  "parent_ids": [],
+  "related_ids": [],
+  "tags": [
+    "finance",
+    "interest-rate",
+    "lpr",
+    "china-economy",
+    "monetary-policy",
+    "banking",
+    "mortgage-rates",
+    "pboC",
+    "financial-markets"
+  ],
+  "sources": [
+    {
+      "source_id": "doc_pboc2a",
+      "file_name": "lpr-policy-updated.txt",
+      "page": null,
+      "content_snippet": "The Loan Prime Rate (LPR) is the primary benchmark interest rate for loans in China. It is calculated and published by the National Interbank Funding Center authorized by the People's Bank of China on the 20th of each month (postponed if holiday). Since 2023, a 5-year LPR has been the reference for mortgage rates.",
+      "url": "https://www.pboc.gov.cn/lpr-policy-updated"
+    }
+  ],
+  "confidence": 0.7810675499999997,
+  "status": "active",
+  "version": 3,
+  "create_time": "2026-04-19T08:49:04.958828",
+  "update_time": "2026-04-19T08:55:54.502776",
+  "feedback": {
+    "positive": 4,
+    "negative": 2,
+    "comments": [
+      "Very clear explanation!",
+      "Needs more recent data",
+      "Very helpful explanation!",
+      "Clear and concise",
+      "Needs more recent data"
+    ]
+  },
+  "metadata": {
+    "source_type": "webpage",
+    "document_hash": "b4689b76e65d1e1bf106f3ff35149668",
+    "compiled_at": "2026-04-19T08:49:12.775823",
+    "compiler_version": "2.0"
+  }
+}

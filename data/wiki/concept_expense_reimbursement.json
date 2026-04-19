@@ -1,0 +1,58 @@
+{
+  "entry_id": "concept_expense_reimbursement",
+  "title": "Expense Reimbursement Concept",
+  "aliases": [
+    "expense claim",
+    "reimbursement policy",
+    "business expenses"
+  ],
+  "type": "concept",
+  "content": "# Expense Reimbursement Concept\n\n## Definition\nExpense reimbursement is the process by which employees are repaid for legitimate business-related expenses incurred on behalf of the company.\n\n## Key Principles\n1. **Business Purpose**: Expenses must have clear business justification\n2. **Reasonable Cost**: Expenses should be reasonable and necessary\n3. **Documentation**: Receipts and supporting documents required\n4. **Timeliness**: Submit within 30 days of expense occurrence\n5. **Compliance**: Must adhere to company policy and local regulations\n\n## Eligible Expenses\n- Business travel (flights, hotels, ground transportation)\n- Client meals and entertainment (with prior approval)\n- Conference registration fees\n- Professional development courses\n- Office supplies (when working remotely)\n\n## Non-Eligible Expenses\n- Personal expenses\n- Alcohol (unless pre-approved for client entertainment)\n- Upgrades beyond standard (e.g., first-class flights)\n- Family member expenses\n- Fines or penalties\n\n## Reimbursement Limits\n- Daily meal allowance: $75 (domestic), $100 (international)\n- Hotel maximum: $200/night (tier 1 cities), $150/night (other locations)\n- Ground transportation: Actual cost with receipts\n\n## Approval Workflow\n1. Employee submits expense report with receipts\n2. Direct manager reviews and approves\n3. Finance department verifies compliance\n4. Payment processed within 10 business days\n\n## Documentation Requirements\n- Original receipts (digital copies acceptable)\n- Business purpose description\n- Attendee list (for meals/entertainment)\n- Pre-approval documentation (if required)\n\n## Related Concepts\n- [Travel Policy](policy_travel)\n- [Corporate Credit Card Usage](policy_corporate_card)\n- [Per Diem Rates](reference_per_diem)\n\n## Tax Implications\nReimbursed business expenses are generally non-taxable. Consult tax advisor for specific situations.",
+  "summary": "Core concept of expense reimbursement including principles, eligible expenses, limits, and approval workflow.",
+  "parent_ids": [],
+  "related_ids": [
+    {
+      "entry_id": "policy_travel",
+      "relation": "related_to"
+    },
+    {
+      "entry_id": "policy_corporate_card",
+      "relation": "related_to"
+    },
+    {
+      "entry_id": "process_submit_expense",
+      "relation": "depends_on"
+    }
+  ],
+  "tags": [
+    "finance",
+    "expenses",
+    "reimbursement",
+    "policy",
+    "concept"
+  ],
+  "sources": [
+    {
+      "source_id": "doc_finance_2024_003",
+      "file_name": "Finance_Policy_Manual_2024.pdf",
+      "page": 22,
+      "content_snippet": "Chapter 4: Expense Management - The company reimburses...",
+      "url": "https://intranet.company.com/finance/policies"
+    }
+  ],
+  "confidence": 0.97,
+  "status": "active",
+  "version": 1,
+  "create_time": "2024-03-10T11:00:00",
+  "update_time": "2024-03-10T11:00:00",
+  "feedback": {
+    "positive": 12,
+    "negative": 0,
+    "comments": []
+  },
+  "metadata": {
+    "department": "Finance",
+    "category": "Financial Policies",
+    "regulatory_compliance": true
+  }
+}

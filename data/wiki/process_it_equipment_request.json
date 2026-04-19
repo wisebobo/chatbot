@@ -1,0 +1,62 @@
+{
+  "entry_id": "process_it_equipment_request",
+  "title": "IT Equipment Request Process",
+  "aliases": [
+    "hardware request",
+    "laptop request",
+    "equipment procurement"
+  ],
+  "type": "process",
+  "content": "# IT Equipment Request Process\n\n## Overview\nStandardized procedure for requesting IT equipment including laptops, monitors, peripherals, and software licenses.\n\n## Standard Equipment Allocation\nAll full-time employees receive:\n- Laptop (standard business configuration)\n- Monitor (24\" or 27\" upon request)\n- Keyboard and mouse (ergonomic options available)\n- Headset (for remote/hybrid workers)\n- Laptop bag/case\n\n## Request Procedure\n\n### Step 1: Submit Request\nComplete the **IT Equipment Request Form** on the intranet portal.\n- URL: https://intranet.company.com/it/equipment-request\n- Required fields: Employee ID, justification, equipment type\n\n### Step 2: Manager Approval\nYour direct manager must approve the request within **2 business days**.\n- Approval via email or workflow system\n- Budget code verification required\n\n### Step 3: IT Processing\nIT department processes approved requests within **5 business days**.\n- Inventory check\n- Configuration and setup\n- Asset tagging\n\n### Step 4: Delivery/Collection\n**Office-based employees:**\n- Collect from IT Service Desk (Building A, Floor 2)\n- Bring employee ID for verification\n\n**Remote employees:**\n- Equipment shipped via courier (2-3 business days)\n- Signature required upon delivery\n- Return shipping label included for future returns\n\n## Special/Non-Standard Requests\nFor equipment beyond standard allocation:\n1. Provide detailed **business justification**\n2. Include **cost estimate** from vendor\n3. Obtain **department head approval** (not just direct manager)\n4. IT will evaluate technical feasibility\n\nExamples: High-performance workstation, specialized software, multiple monitors\n\n## Software Licenses\nSoftware requests follow separate process:\n- Standard software: Auto-approved (Office 365, Adobe Reader, etc.)\n- Specialized software: Requires IT security review\n- Development tools: Requires CTO approval\n\n## Equipment Return\nWhen leaving company or upgrading:\n1. **Back up all data** to company cloud storage\n2. Sign out of all accounts and services\n3. Return equipment to IT Service Desk\n4. Complete **Equipment Return Form**\n5. Receive confirmation email\n\n## Warranty and Support\n- Standard warranty: 3 years manufacturer warranty\n- Extended warranty: Available for critical roles\n- Support: IT Helpdesk (ext. 1234, ithelp@company.com)\n\n## Related Resources\n- [IT Security Policy](policy_it_security)\n- [Remote Work Setup Guide](guide_remote_work_setup)\n- [Software License Management](process_software_license)\n\n## Contact\n**IT Service Desk:**\n- Email: ithelp@company.com\n- Phone: ext. 1234\n- Portal: https://support.company.com\n- Hours: Mon-Fri 8:00 AM - 6:00 PM",
+  "summary": "Complete process for requesting IT equipment including standard allocation, approval workflow, and delivery procedures.",
+  "parent_ids": [],
+  "related_ids": [
+    {
+      "entry_id": "policy_it_security",
+      "relation": "related_to"
+    },
+    {
+      "entry_id": "guide_remote_work_setup",
+      "relation": "example_of"
+    },
+    {
+      "entry_id": "process_software_license",
+      "relation": "related_to"
+    }
+  ],
+  "tags": [
+    "it",
+    "equipment",
+    "hardware",
+    "procurement",
+    "process"
+  ],
+  "sources": [
+    {
+      "source_id": "doc_it_2024_005",
+      "file_name": "IT_Procedures_Manual_v3.2.docx",
+      "page": 8,
+      "content_snippet": "Section 2.1: Equipment Procurement - All hardware requests must...",
+      "url": "https://intranet.company.com/it/procedures"
+    }
+  ],
+  "confidence": 0.95,
+  "status": "active",
+  "version": 3,
+  "create_time": "2023-06-15T09:00:00",
+  "update_time": "2024-11-20T14:15:00",
+  "feedback": {
+    "positive": 38,
+    "negative": 5,
+    "comments": [
+      "Process is clear but could be faster",
+      "Would like self-service option for standard items"
+    ]
+  },
+  "metadata": {
+    "department": "Information Technology",
+    "process_owner": "IT Operations",
+    "sla_days": 5,
+    "automation_level": "semi-automated"
+  }
+}

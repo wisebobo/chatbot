@@ -1,0 +1,62 @@
+{
+  "entry_id": "policy_annual_leave",
+  "title": "Annual Leave Policy",
+  "aliases": [
+    "vacation policy",
+    "time off policy",
+    "leave entitlement"
+  ],
+  "type": "rule",
+  "content": "# Annual Leave Policy\n\n## Overview\nAll full-time employees are entitled to annual leave based on their length of service.\n\n## Leave Entitlement (2024)\n- **Tier 1 (0-2 years)**: 10 days per year\n- **Tier 2 (>2-5 years)**: 15 days per year  \n- **Tier 3 (>5 years)**: 20 days per year\n\n## Application Process\n1. Submit leave request through HR portal at least **2 weeks (10 business days)** in advance\n2. Obtain manager approval via workflow system\n3. HR will confirm and update records within 3 business days\n\n## Carry-over Policy\n- Maximum **5 days** can be carried over to next year\n- Must be used within **first quarter (Q1)** of following year\n- Excess days will be **forfeited** without compensation\n\n## Public Holidays\nPublic holidays do not count against annual leave entitlement.\n\n## Emergency Leave\nFor emergency situations, contact HR directly with manager notification.\n\n## Related Policies\n- See also: [Sick Leave Policy](policy_sick_leave)\n- See also: [Remote Work Policy](policy_remote_work)\n\n## Contact\nFor questions about leave policy:\n- Email: hr@company.com\n- Portal: https://hr.company.com/leave\n- Phone: ext. 5678",
+  "summary": "Company annual leave policy detailing entitlements based on tenure, application process, and carry-over rules.",
+  "parent_ids": [],
+  "related_ids": [
+    {
+      "entry_id": "policy_sick_leave",
+      "relation": "related_to"
+    },
+    {
+      "entry_id": "policy_remote_work",
+      "relation": "related_to"
+    },
+    {
+      "entry_id": "process_leave_request",
+      "relation": "depends_on"
+    }
+  ],
+  "tags": [
+    "hr",
+    "leave",
+    "vacation",
+    "policy",
+    "benefits"
+  ],
+  "sources": [
+    {
+      "source_id": "doc_hr_2024_001",
+      "file_name": "Employee_Handbook_2024.pdf",
+      "page": 15,
+      "content_snippet": "Section 3.2: Annual Leave - Employees are entitled to...",
+      "url": "https://intranet.company.com/docs/handbook2024.pdf"
+    }
+  ],
+  "confidence": 0.98,
+  "status": "active",
+  "version": 2,
+  "create_time": "2024-01-01T00:00:00",
+  "update_time": "2024-12-15T10:30:00",
+  "feedback": {
+    "positive": 45,
+    "negative": 2,
+    "comments": [
+      "Very clear and helpful!",
+      "Would be good to add examples for part-time employees"
+    ]
+  },
+  "metadata": {
+    "department": "Human Resources",
+    "effective_date": "2024-01-01",
+    "review_date": "2025-01-01",
+    "owner": "HR Policy Team"
+  }
+}

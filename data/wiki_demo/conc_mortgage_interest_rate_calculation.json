@@ -1,0 +1,55 @@
+{
+  "entry_id": "conc_mortgage_interest_rate_calculation",
+  "title": "Mortgage Interest Rate Calculation in China",
+  "aliases": [
+    "mortgage rate formula",
+    "LPR-based mortgage",
+    "home loan interest rate",
+    "5-year LPR adjustment"
+  ],
+  "type": "concept",
+  "content": "# Mortgage Interest Rate Calculation in China\n\nIn China, mortgage interest rates are determined using the **5-year Loan Prime Rate (LPR)** as a基准 (benchmark), with adjustments made based on borrower type and risk profile.\n\n## Formula\n\nThe standard formula is:\n\n```\nMortgage Rate = 5-year LPR + BP adjustment\n```\n\nWhere:\n- **5-year LPR**: The official benchmark interest rate published monthly by the People's Bank of China (PBOC).\n- **BP adjustment**: Basis points added or subtracted based on loan type and creditworthiness. 1 basis point = 0.01%.\n\n## Common Adjustments\n\n- **First-time homebuyers**: Typically receive a discount of **-20 basis points** (e.g., LPR - 20bps).\n- **Second homes**: Usually subject to a premium of **+60 basis points** (e.g., LPR + 60bps).\n\n### Example Calculation\n\nIf the current 5-year LPR is **3.85%**:\n\n- First-time buyer: `3.85% - 0.20% = 3.65%`\n- Second-home buyer: `3.85% + 0.60% = 4.45%`\n\nThis system allows banks to tailor rates while maintaining transparency and consistency with national monetary policy.\n\n## Practical Implications\n\nBorrowers should monitor monthly LPR updates, as changes directly impact their mortgage payments. First-time buyers benefit from lower rates, encouraging homeownership, while second-home premiums reflect higher perceived risk.",
+  "summary": "Mortgage interest rates in China are calculated using the 5-year LPR plus or minus basis points, with discounts for first-time buyers and premiums for second homes.",
+  "parent_ids": [],
+  "related_ids": [
+    {
+      "entry_id": "conc_loan_prime_rate",
+      "relation": "depends_on"
+    }
+  ],
+  "tags": [
+    "mortgage",
+    "interest-rate",
+    "lpr",
+    "banking",
+    "finance",
+    "real-estate",
+    "loan-adjustment",
+    "china"
+  ],
+  "sources": [
+    {
+      "source_id": "doc_pboc123",
+      "file_name": "unknown_document.txt",
+      "page": null,
+      "content_snippet": "Mortgage rates in China are based on the 5-year LPR plus/minus basis points. Formula: Mortgage Rate = 5-year LPR + BP adjustment. For first-time homebuyers, banks may offer LPR - 20bps. For second homes, typically LPR + 60bps.",
+      "url": "https://www.pboc.gov.cn/mortgage-rates"
+    }
+  ],
+  "confidence": 0.95,
+  "status": "active",
+  "version": 1,
+  "create_time": "2026-04-19T08:49:19.508580",
+  "update_time": "2026-04-19T08:49:19.508580",
+  "feedback": {
+    "positive": 0,
+    "negative": 0,
+    "comments": []
+  },
+  "metadata": {
+    "source_type": "webpage",
+    "document_hash": "b5a1766be3b328522e969bd6f9fb82f7",
+    "compiled_at": "2026-04-19T08:49:19.508580",
+    "compiler_version": "2.0"
+  }
+}
