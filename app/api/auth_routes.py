@@ -1,9 +1,9 @@
 """
 Authentication API Routes
-Provides LDAP-based authentication and JWT token management
+Provides LDAP-based authentication and JWT token management with database persistence
 """
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from typing import Optional
 from pydantic import BaseModel
 from jwt import InvalidTokenError
@@ -15,6 +15,8 @@ from app.api.jwt_auth import (
     Token,
 )
 from app.api.ldap_auth import get_ldap_authenticator, LDAPAuthenticator
+from app.db.database import get_db
+from app.db.repositories import APIKeyRepository, AuditLogRepository
 from app.monitoring.metrics import (
     auth_failures,
     user_logins,
@@ -32,8 +34,20 @@ class UserLogin(BaseModel):
     password: str
 
 
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP from request"""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
 @router.post("/login", response_model=Token)
-async def login(credentials: UserLogin):
+async def login(
+    credentials: UserLogin,
+    request: Request,
+    db=Depends(get_db)
+):
     """
     Authenticate user against Active Directory via LDAP
     
@@ -48,6 +62,10 @@ async def login(credentials: UserLogin):
     Raises:
         HTTPException: 401 if credentials are invalid
     """
+    # Initialize repositories
+    audit_repo = AuditLogRepository(db)
+    client_ip = _get_client_ip(request)
+    
     try:
         # Get LDAP authenticator
         ldap_auth = get_ldap_authenticator()
@@ -59,6 +77,19 @@ async def login(credentials: UserLogin):
             # Track failed login
             auth_failures.labels(endpoint="/auth/login", reason="invalid_credentials").inc()
             user_logins.labels(status="failure").inc()
+            
+            # Log failed attempt to audit log
+            audit_repo.create_log(
+                action="login_failed",
+                user_id=credentials.username,
+                ip_address=client_ip,
+                method="POST",
+                endpoint="/api/v1/auth/login",
+                status_code=401,
+                error_message="Invalid credentials",
+                metadata={"reason": "invalid_credentials"}
+            )
+            db.commit()
             
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -91,6 +122,22 @@ async def login(credentials: UserLogin):
         # Track token issuance
         jwt_tokens_issued.labels(token_type="access").inc()
         jwt_tokens_issued.labels(token_type="refresh").inc()
+        
+        # Log successful login to audit log
+        audit_repo.create_log(
+            action="login_success",
+            user_id=credentials.username,
+            ip_address=client_ip,
+            method="POST",
+            endpoint="/api/v1/auth/login",
+            status_code=200,
+            metadata={
+                "display_name": user_info.get("display_name"),
+                "email": user_info.get("email"),
+                "role": role
+            }
+        )
+        db.commit()
         
         return Token(
             access_token=access_token,

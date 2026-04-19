@@ -37,6 +37,19 @@ try:
         "Number of active API keys"
     )
 
+    api_key_requests = Counter(
+        "api_key_requests_total",
+        "Total API key authenticated requests",
+        ["key_name", "status"],
+    )
+
+    # ===== Audit Log Metrics =====
+    audit_logs_created = Counter(
+        "audit_logs_created_total",
+        "Total audit log entries created",
+        ["action_type"],
+    )
+
     # ===== Skill Execution Metrics =====
     skill_execution_counter = Counter(
         "skill_executions_total",

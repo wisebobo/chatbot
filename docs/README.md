@@ -13,6 +13,13 @@ This directory contains detailed technical guides for the LangGraph Enterprise A
 | [JWT Authentication Guide](JWT_AUTHENTICATION_GUIDE.md) | JWT token management and validation (updated for LDAP) | 15 KB |
 | [Monitoring & Observability Guide](PHASE3_MONITORING_GUIDE.md) | Phase 3 implementation: Prometheus metrics, Grafana dashboard, alert rules | 23 KB |
 
+### Database & Persistence
+
+| Document | Description | Size |
+|----------|-------------|------|
+| [Database Configuration Guide](DATABASE_CONFIGURATION_GUIDE.md) | **NEW**: PostgreSQL/SQLite dual architecture setup and usage | 10 KB |
+| [Database Integration Summary](DATABASE_INTEGRATION_SUMMARY.md) | **NEW**: Migration from memory/file storage to database repositories | 9 KB |
+
 ### Knowledge Management
 
 | Document | Description | Size |
@@ -46,7 +53,8 @@ Use the detailed guides in this directory when you need:
 ### For New Users
 1. Start with [README.md](../README.md)
 2. Read [LDAP Integration Guide](LDAP_INTEGRATION_GUIDE.md) for authentication setup
-3. Read [RAG Integration Guide](RAG_INTEGRATION_GUIDE.md) if using knowledge base
+3. Read [Database Configuration Guide](DATABASE_CONFIGURATION_GUIDE.md) for persistence setup
+4. Read [RAG Integration Guide](RAG_INTEGRATION_GUIDE.md) if using knowledge base
 
 ### For Developers
 1. [LLM Wiki Compiler Guide](LLM_WIKI_COMPILER_GUIDE.md) - Understanding wiki architecture

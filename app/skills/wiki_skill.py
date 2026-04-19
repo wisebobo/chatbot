@@ -76,15 +76,16 @@ class WikiSkill(BaseSkill):
         super().__init__()
         self._settings = get_settings().wiki
         
-        # Initialize local wiki engine
-        self._local_wiki = LocalWikiEngine()
+        # Initialize database-backed wiki engine
+        from app.wiki.db_engine import DatabaseWikiEngine
+        self._local_wiki = DatabaseWikiEngine()
         
         # Load sample data if wiki is empty
         if self._local_wiki.get_article_count() == 0:
-            logger.info("Loading sample wiki articles...")
+            logger.info("Loading sample wiki articles into database...")
             sample_articles = get_sample_articles()
-            self._local_wiki.import_articles(sample_articles)
-            logger.info(f"Loaded {len(sample_articles)} sample articles")
+            count = self._local_wiki.import_articles(sample_articles)
+            logger.info(f"Loaded {count} sample articles to database")
         
         # Check if remote API is configured
         self._use_remote_api = bool(self._settings.api_key and 
@@ -94,7 +95,7 @@ class WikiSkill(BaseSkill):
         if self._use_remote_api:
             logger.info("Wiki skill using remote API mode")
         else:
-            logger.info("Wiki skill using local engine mode")
+            logger.info("Wiki skill using database engine mode (PostgreSQL/SQLite)")
 
     async def execute(self, params: Dict[str, Any]) -> SkillOutput:
         """Execute wiki knowledge base search"""

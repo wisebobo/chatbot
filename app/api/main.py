@@ -27,6 +27,7 @@ from app.state.agent_state import AgentState, WorkflowStatus
 from app.wiki.engine import LocalWikiEngine
 from app.api.auth import get_api_key, get_optional_api_key, APIUser
 from app.api.auth_routes import router as auth_router
+from app.api.api_key_routes import router as api_key_router
 
 logger = logging.getLogger(__name__)
 
@@ -126,11 +127,33 @@ def create_app() -> FastAPI:
 
     # Register authentication routes
     app.include_router(auth_router, prefix=settings.api.api_prefix)
-    logger.info("Registered authentication routes: /auth/register, /auth/login, /auth/refresh, /auth/me")
+    logger.info("Registered authentication routes: /auth/login, /auth/refresh, /auth/me")
+    
+    # Register API key management routes
+    app.include_router(api_key_router, prefix=settings.api.api_prefix)
+    logger.info("Registered API key management routes: /api-keys/")
 
-    # Initialize wiki engine for feedback API (use same directory as example script)
-    wiki_engine = LocalWikiEngine(storage_dir="data/wiki_demo")
-    logger.info(f"Wiki engine initialized with {wiki_engine.get_article_count()} articles")
+    # Initialize database tables (auto-create if not exists)
+    from app.db.database import get_db_manager
+    db_manager = get_db_manager()
+    db_manager.create_tables()
+    logger.info(f"Database initialized: {db_manager._mask_url(db_manager.database_url)}")
+
+    # Initialize wiki engine for feedback API (now uses database)
+    from app.wiki.db_engine import DatabaseWikiEngine
+    wiki_engine = DatabaseWikiEngine()
+    article_count = wiki_engine.get_article_count()
+    
+    # Load sample data if empty
+    if article_count == 0:
+        logger.info("Loading sample wiki articles into database...")
+        from app.wiki.sample_data import get_sample_articles
+        sample_articles = get_sample_articles()
+        wiki_engine.import_articles(sample_articles)
+        article_count = len(sample_articles)
+        logger.info(f"Loaded {article_count} sample articles to database")
+    
+    logger.info(f"Wiki engine initialized with {article_count} articles (database-backed)")
 
     prefix = settings.api.api_prefix
 
