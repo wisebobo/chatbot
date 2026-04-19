@@ -33,20 +33,31 @@
       "url": "https://www.pboc.gov.cn/lpr-policy-updated"
     }
   ],
-  "confidence": 0.7810675499999997,
+  "confidence": 0.8596924202149627,
   "status": "active",
   "version": 3,
   "create_time": "2026-04-19T08:49:04.958828",
-  "update_time": "2026-04-19T08:55:54.502776",
+  "update_time": "2026-04-19T09:57:46.854707",
   "feedback": {
-    "positive": 4,
+    "positive": 15,
     "negative": 2,
     "comments": [
       "Very clear explanation!",
       "Needs more recent data",
       "Very helpful explanation!",
       "Clear and concise",
-      "Needs more recent data"
+      "Needs more recent data",
+      "Testing authentication",
+      "Test 1",
+      "Test 2",
+      "Test 3",
+      "Test 4",
+      "Test 5",
+      "Test 6",
+      "Test 7",
+      "Test 8",
+      "Test 9",
+      "Test 10"
     ]
   },
   "metadata": {

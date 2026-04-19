@@ -10,6 +10,9 @@ from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.config.settings import get_settings
 from app.graph.graph import get_graph
@@ -22,6 +25,7 @@ from app.skills.rag_skill import RagSkill
 from app.skills.wiki_skill import WikiSkill
 from app.state.agent_state import AgentState, WorkflowStatus
 from app.wiki.engine import LocalWikiEngine
+from app.api.auth import get_api_key, get_optional_api_key, APIUser
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +87,12 @@ def create_app() -> FastAPI:
         redoc_url=f"{settings.api.api_prefix}/redoc",
     )
 
+    # ===== Rate Limiter Setup =====
+    limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    logger.info("Rate limiter initialized with default limit: 200/minute")
+
     # CORS
     app.add_middleware(
         CORSMiddleware,
@@ -115,9 +125,12 @@ def create_app() -> FastAPI:
         )
 
     @app.post(f"{prefix}/chat", response_model=ChatResponse, tags=["Chat"])
-    async def chat(req: ChatRequest):
+    @limiter.limit("30/minute")  # 30 requests per minute per IP
+    async def chat(req: ChatRequest, request: Request):
         """
         Standard chat endpoint (non-streaming)
+        
+        Rate limit: 30 requests per minute per IP address
         """
         session_id = req.session_id or str(uuid.uuid4())
         request_id = str(uuid.uuid4())
@@ -150,9 +163,12 @@ def create_app() -> FastAPI:
                 raise HTTPException(status_code=500, detail=str(e))
 
     @app.post(f"{prefix}/chat/stream", tags=["Chat"])
-    async def chat_stream(req: ChatRequest):
+    @limiter.limit("20/minute")  # 20 requests per minute for streaming (more resource intensive)
+    async def chat_stream(req: ChatRequest, request: Request):
         """
         Streaming chat endpoint (SSE)
+        
+        Rate limit: 20 requests per minute per IP address
         """
         session_id = req.session_id or str(uuid.uuid4())
 
@@ -183,12 +199,30 @@ def create_app() -> FastAPI:
         )
 
     @app.post(f"{prefix}/approval", tags=["Human Approval"])
-    async def submit_approval(req: HumanApprovalRequest):
+    @limiter.limit("20/minute")
+    async def submit_approval(
+        req: HumanApprovalRequest,
+        request: Request,
+        current_user: APIUser = Depends(get_api_key)  # Require authentication for approval
+    ):
         """
         Submit a human approval decision (human-in-the-loop)
+        
+        Authentication: Required (X-API-Key header)
+        Rate limit: 20 requests per minute
+        
         After approval, the workflow will resume from the breakpoint
+        
+        Args:
+            req: Approval request with session_id and decision
+            current_user: Authenticated user (must have valid API key)
+            
+        Returns:
+            Approval result and updated workflow status
         """
         try:
+            logger.info(f"Approval submitted by user: {current_user.user_id} for session: {req.session_id}")
+            
             graph = get_graph()
             config = {"configurable": {"thread_id": req.session_id}}
 
@@ -208,22 +242,33 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=500, detail=str(e))
 
     @app.post(f"{prefix}/wiki/feedback", response_model=WikiFeedbackResponse, tags=["Wiki"])
-    async def submit_wiki_feedback(req: WikiFeedbackRequest):
+    @limiter.limit("10/minute")  # Stricter limit for feedback to prevent spam
+    async def submit_wiki_feedback(
+        req: WikiFeedbackRequest,
+        request: Request,
+        current_user: APIUser = Depends(get_api_key)  # Require authentication
+    ):
         """
-        Submit user feedback for a wiki article
+        Submit user feedback for a wiki article (requires authentication)
         
         This implements the feedback loop for continuous knowledge improvement:
         - Positive/negative feedback is recorded
         - Confidence score is automatically recalculated
         - Low-confidence articles can be flagged for re-compilation
         
+        Rate limit: 10 requests per minute per IP
+        Authentication: Required (X-API-Key header)
+        
         Args:
             req: Feedback request with entry_id, is_positive, and optional comment
+            current_user: Authenticated user from API key
             
         Returns:
             Feedback summary with updated statistics
         """
         try:
+            logger.info(f"Feedback submitted by user: {current_user.user_id} for article: {req.entry_id}")
+            
             # Submit feedback to wiki engine
             success = wiki_engine.submit_feedback(
                 entry_id=req.entry_id,
@@ -265,17 +310,29 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=500, detail=str(e))
 
     @app.get(f"{prefix}/wiki/{{entry_id}}/feedback", tags=["Wiki"])
-    async def get_wiki_feedback_stats(entry_id: str):
+    @limiter.limit("60/minute")  # Higher limit for read operations
+    async def get_wiki_feedback_stats(
+        entry_id: str,
+        request: Request,
+        current_user: Optional[APIUser] = Depends(get_optional_api_key)  # Optional auth
+    ):
         """
         Get feedback statistics for a wiki article
         
+        Authentication: Optional (anonymous access allowed)
+        Rate limit: 60 requests per minute per IP
+        
         Args:
             entry_id: Wiki article entry_id
+            current_user: Authenticated user if API key provided
             
         Returns:
             Feedback statistics and confidence information
         """
         try:
+            user_info = f" by user: {current_user.user_id}" if current_user else " (anonymous)"
+            logger.debug(f"Feedback stats requested for {entry_id}{user_info}")
+            
             article = wiki_engine.get_article(entry_id)
             if not article:
                 raise HTTPException(

@@ -1,5 +1,98 @@
-/.env
-/**/__pycache__/
-/**/.venv/
-/**/venv/
-/**/.pytest_cache/
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ===== Virtual Environment =====
+venv/
+ENV/
+env/
+.venv/
+.env.bak/
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ===== Testing =====
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ===== Jupyter Notebook =====
+.ipynb_checkpoints
+*.ipynb
+
+# ===== Environment Variables =====
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ===== Logs =====
+*.log
+logs/
+*.log.*
+
+# ===== Database =====
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== Temporary Files =====
+*.tmp
+*.temp
+tmp/
+temp/
+*.bak
+*.backup
+
+# ===== OS Files =====
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ===== Project Specific =====
+# Wiki data (generated content)
+data/wiki/
+data/wiki_demo/
+
+# Backup files
+.env.backup
+*.backup
+
+# Test outputs
+test_results/
+outputs/
+
+# Local configuration
+config.local.json
+settings.local.json
