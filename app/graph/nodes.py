@@ -1,6 +1,12 @@
 """
 LangGraph orchestration layer - core workflow node definitions
 Each node represents an Agent workflow step and is orchestrated by the StateGraph
+
+Enhanced with:
+- Structured exception handling
+- Exponential backoff retry
+- Circuit breaker pattern
+- Detailed error logging with correlation IDs
 """
 import logging
 import hashlib
@@ -13,6 +19,9 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from app.llm.adapter import get_llm_adapter
 from app.skills.base import skill_registry
 from app.state.agent_state import AgentState, HumanApprovalRequest, WorkflowStatus
+from app.exceptions import LLMError, SkillExecutionError, ConfigurationError
+from app.utils.retry import exponential_backoff
+from app.utils.circuit_breaker import CircuitBreakerRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +94,11 @@ async def intent_recognition_node(state: AgentState) -> Dict[str, Any]:
     Intent recognition node
     Calls the LLM to analyze user intent and decide routing
     
-    Optimization: Uses caching to avoid redundant LLM calls for similar queries
+    Features:
+    - Caching to avoid redundant LLM calls
+    - Exponential backoff retry on transient failures
+    - Circuit breaker to prevent cascading failures
+    - Structured error handling with detailed logging
     """
     logger.info(f"[intent_recognition] session={state.session_id}, input={state.user_input[:50]}")
 
@@ -112,8 +125,34 @@ async def intent_recognition_node(state: AgentState) -> Dict[str, Any]:
         HumanMessage(content=state.user_input),
     ]
 
+    # Get circuit breaker for LLM calls
+    llm_breaker = CircuitBreakerRegistry.get_or_create(
+        name="llm_intent_recognition",
+        failure_threshold=5,
+        recovery_timeout=60.0
+    )
+    
+    @exponential_backoff(
+        max_retries=3,
+        base_delay=1.0,
+        max_delay=30.0,
+        retryable_exceptions=(TimeoutError, ConnectionError, OSError)
+    )
+    async def call_llm_with_retry():
+        try:
+            response = await llm.ainvoke(messages)
+            return response
+        except Exception as e:
+            raise LLMError(
+                model="intent_recognition",
+                error_message=str(e),
+                retriable=True
+            ) from e
+    
     try:
-        response = await llm.ainvoke(messages)
+        # Execute with circuit breaker and retry
+        response = await llm_breaker(call_llm_with_retry)
+        
         content = response.content.strip()
         # Remove possible markdown code block
         if content.startswith("```"):
@@ -123,6 +162,7 @@ async def intent_recognition_node(state: AgentState) -> Dict[str, Any]:
 
         parsed = json.loads(content)
         routing = parsed.get("routing_decision", "direct_reply")
+        
         # Validate that the routing target exists
         if routing not in skill_names and routing != "direct_reply":
             logger.warning(f"Unknown routing target: {routing}, fallback to direct_reply")
@@ -142,11 +182,26 @@ async def intent_recognition_node(state: AgentState) -> Dict[str, Any]:
             **intent_result,
             "workflow_status": WorkflowStatus.RUNNING,
         }
-    except Exception as e:
-        logger.error(f"[intent_recognition] failed: {e}", exc_info=True)
+    
+    except LLMError as e:
+        logger.error(
+            f"[intent_recognition] LLM error after retries: {e.message}",
+            exc_info=True
+        )
         return {
             "routing_decision": "direct_reply",
-            "error": str(e),
+            "error": f"LLM service temporarily unavailable: {e.message}",
+            "workflow_status": WorkflowStatus.RUNNING,
+        }
+    
+    except Exception as e:
+        logger.error(
+            f"[intent_recognition] unexpected error: {type(e).__name__}: {e}",
+            exc_info=True
+        )
+        return {
+            "routing_decision": "direct_reply",
+            "error": f"Intent recognition failed: {str(e)}",
             "workflow_status": WorkflowStatus.RUNNING,
         }
 
@@ -155,6 +210,12 @@ async def skill_execution_node(state: AgentState) -> Dict[str, Any]:
     """
     Skill execution node
     Invokes the chosen skill based on routing, handling exceptions and retries
+    
+    Features:
+    - Exponential backoff retry for transient failures
+    - Circuit breaker to prevent cascading failures
+    - Structured error handling with detailed logging
+    - Dynamic human approval support
     """
     skill_name = state.routing_decision
     logger.info(f"[skill_execution] skill={skill_name}, session={state.session_id}")
@@ -204,23 +265,84 @@ async def skill_execution_node(state: AgentState) -> Dict[str, Any]:
 
     execution = state.add_skill_execution(skill_name, params)
 
-    output = await skill.safe_execute(params, max_retries=state.max_retries)
-    execution.status = "success" if output.success else "failed"
-    execution.output = output.data
-    execution.error_message = output.error_message
+    # Get circuit breaker for this skill
+    skill_breaker = CircuitBreakerRegistry.get_or_create(
+        name=f"skill_{skill_name}",
+        failure_threshold=3,
+        recovery_timeout=30.0
+    )
+    
+    @exponential_backoff(
+        max_retries=state.max_retries,
+        base_delay=1.0,
+        max_delay=30.0,
+        retryable_exceptions=(ConnectionError, TimeoutError, OSError)
+    )
+    async def execute_skill_with_retry():
+        try:
+            output = await skill.safe_execute(params, max_retries=1)  # Retry handled by decorator
+            
+            if not output.success:
+                raise SkillExecutionError(
+                    skill_name=skill_name,
+                    error_message=output.error_message or "Unknown error",
+                    retriable=False  # Don't retry business logic failures
+                )
+            
+            return output
+        
+        except SkillExecutionError:
+            raise  # Re-raise our custom exception
+        except Exception as e:
+            raise SkillExecutionError(
+                skill_name=skill_name,
+                error_message=str(e),
+                retriable=True
+            ) from e
+    
+    try:
+        # Execute with circuit breaker and retry
+        output = await skill_breaker(execute_skill_with_retry)
+        
+        execution.status = "success"
+        execution.output = output.data
+        execution.error_message = None
 
-    if not output.success:
         return {
-            "skill_result": {"success": False, "error": output.error_message},
-            "workflow_status": WorkflowStatus.FAILED,
-            "error": output.error_message,
+            "skill_result": {"success": True, "data": output.data},
+            "current_skill": skill_name,
+            "workflow_status": WorkflowStatus.RUNNING,
         }
-
-    return {
-        "skill_result": {"success": True, "data": output.data},
-        "current_skill": skill_name,
-        "workflow_status": WorkflowStatus.RUNNING,
-    }
+    
+    except SkillExecutionError as e:
+        logger.error(
+            f"[skill_execution] Skill error: {e.message}",
+            exc_info=True
+        )
+        
+        execution.status = "failed"
+        execution.error_message = e.message
+        
+        return {
+            "skill_result": {"success": False, "error": e.message},
+            "workflow_status": WorkflowStatus.FAILED,
+            "error": e.message,
+        }
+    
+    except Exception as e:
+        logger.error(
+            f"[skill_execution] Unexpected error: {type(e).__name__}: {e}",
+            exc_info=True
+        )
+        
+        execution.status = "failed"
+        execution.error_message = str(e)
+        
+        return {
+            "skill_result": {"success": False, "error": str(e)},
+            "workflow_status": WorkflowStatus.FAILED,
+            "error": str(e),
+        }
 
 
 async def response_generation_node(state: AgentState) -> Dict[str, Any]:

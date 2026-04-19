@@ -89,6 +89,20 @@ def create_app() -> FastAPI:
         redoc_url=f"{settings.api.api_prefix}/redoc",
     )
 
+    # ===== Exception Handler Setup =====
+    from app.middleware.exception_handler import (
+        register_exception_handlers,
+        CorrelationIDMiddleware
+    )
+    
+    # Add correlation ID middleware
+    app.add_middleware(CorrelationIDMiddleware)
+    logger.info("Correlation ID middleware registered")
+    
+    # Register global exception handlers
+    register_exception_handlers(app)
+    logger.info("Global exception handlers registered")
+
     # ===== Rate Limiter Setup =====
     limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
     app.state.limiter = limiter

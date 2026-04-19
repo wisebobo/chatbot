@@ -12,6 +12,7 @@ This directory contains detailed technical guides for the LangGraph Enterprise A
 | [LDAP Integration Guide](LDAP_INTEGRATION_GUIDE.md) | **NEW**: Active Directory authentication via LDAP protocol | 8 KB |
 | [JWT Authentication Guide](JWT_AUTHENTICATION_GUIDE.md) | JWT token management and validation (updated for LDAP) | 15 KB |
 | [Monitoring & Observability Guide](PHASE3_MONITORING_GUIDE.md) | Phase 3 implementation: Prometheus metrics, Grafana dashboard, alert rules | 23 KB |
+| [Exception Handling Guide](EXCEPTION_HANDLING_GUIDE.md) | **NEW**: Custom exceptions, retry, circuit breaker, global error handler | 14 KB |
 
 ### Database & Persistence
 
