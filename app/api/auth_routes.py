@@ -17,6 +17,12 @@ from app.api.jwt_auth import (
     create_refresh_token,
     decode_token,
 )
+from app.monitoring.metrics import (
+    auth_failures,
+    user_registrations,
+    user_logins,
+    jwt_tokens_issued,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +51,9 @@ async def register_user(user_data: UserCreate):
         
         logger.info(f"New user registered: {new_user.username}")
         
+        # Track registration metric
+        user_registrations.inc()
+        
         # Generate tokens
         token_data = {
             "user_id": new_user.user_id,
@@ -54,6 +63,10 @@ async def register_user(user_data: UserCreate):
         
         access_token = create_access_token(token_data)
         refresh_token = create_refresh_token(token_data)
+        
+        # Track token issuance
+        jwt_tokens_issued.labels(token_type="access").inc()
+        jwt_tokens_issued.labels(token_type="refresh").inc()
         
         return Token(
             access_token=access_token,
@@ -95,12 +108,18 @@ async def login(credentials: UserLogin):
     user = user_store.authenticate_user(credentials.username, credentials.password)
     
     if not user:
-        logger.warning(f"Failed login attempt for username: {credentials.username}")
+        # Track failed login
+        auth_failures.labels(endpoint="/auth/login", reason="invalid_credentials").inc()
+        user_logins.labels(status="failure").inc()
+        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # Track successful login
+    user_logins.labels(status="success").inc()
     
     logger.info(f"User logged in: {user.username}")
     

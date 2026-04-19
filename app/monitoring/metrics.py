@@ -1,17 +1,17 @@
 """
 Prometheus monitoring metric definitions
+Extended for production observability (Phase 3)
 """
 try:
     from prometheus_client import Counter, Gauge, Histogram, Summary
 
-    # request counter
+    # ===== Basic Request Metrics =====
     request_counter = Counter(
         "agent_requests_total",
         "Total number of agent requests",
         ["endpoint", "status"],
     )
 
-    # request latency histogram
     request_duration = Histogram(
         "agent_request_duration_seconds",
         "Request duration in seconds",
@@ -19,24 +19,140 @@ try:
         buckets=[0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0],
     )
 
-    # skill execution counter
+    # ===== Authentication & Security Metrics =====
+    auth_failures = Counter(
+        "authentication_failures_total",
+        "Total authentication failures",
+        ["endpoint", "reason"],
+    )
+
+    rate_limit_exceeded = Counter(
+        "rate_limit_exceeded_total",
+        "Total rate limit violations",
+        ["endpoint", "client_ip"],
+    )
+
+    active_api_keys = Gauge(
+        "active_api_keys_total",
+        "Number of active API keys"
+    )
+
+    # ===== Skill Execution Metrics =====
     skill_execution_counter = Counter(
         "skill_executions_total",
         "Total skill executions",
         ["skill_name", "status"],
     )
 
-    # active session gauge
+    skill_execution_duration = Histogram(
+        "skill_execution_duration_seconds",
+        "Skill execution duration in seconds",
+        ["skill_name"],
+        buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0],
+    )
+
+    # ===== Session Management Metrics =====
     active_sessions = Gauge(
         "agent_active_sessions",
         "Number of active agent sessions",
     )
 
-    # LLM call latency
+    session_duration = Histogram(
+        "session_duration_seconds",
+        "Session duration in seconds",
+        buckets=[60, 300, 600, 1800, 3600, 7200],
+    )
+
+    # ===== LLM Performance Metrics =====
     llm_latency = Histogram(
         "llm_call_duration_seconds",
         "LLM call duration in seconds",
+        ["model", "operation"],
         buckets=[0.5, 1.0, 2.0, 5.0, 10.0, 30.0],
+    )
+
+    llm_calls_total = Counter(
+        "llm_calls_total",
+        "Total LLM API calls",
+        ["model", "status"],
+    )
+
+    llm_token_usage = Counter(
+        "llm_tokens_total",
+        "Total tokens used",
+        ["model", "type"],  # type: prompt or completion
+    )
+
+    llm_errors = Counter(
+        "llm_errors_total",
+        "Total LLM API errors",
+        ["model", "error_type"],
+    )
+
+    # ===== Wiki Knowledge Base Metrics =====
+    wiki_articles_total = Gauge(
+        "wiki_articles_total",
+        "Total number of wiki articles"
+    )
+
+    wiki_feedback_submitted = Counter(
+        "wiki_feedback_total",
+        "Total wiki feedback submissions",
+        ["entry_id", "is_positive"],
+    )
+
+    wiki_low_confidence_alerts = Counter(
+        "wiki_low_confidence_alerts_total",
+        "Alerts for low-confidence wiki articles",
+        ["entry_id", "confidence"],
+    )
+
+    wiki_compilation_duration = Histogram(
+        "wiki_compilation_duration_seconds",
+        "Wiki compilation duration in seconds",
+        buckets=[1.0, 5.0, 10.0, 30.0, 60.0],
+    )
+
+    # ===== Error Tracking Metrics =====
+    api_error_rate = Counter(
+        "api_error_total",
+        "Total API errors",
+        ["endpoint", "error_type", "status_code"],
+    )
+
+    exception_count = Counter(
+        "exceptions_total",
+        "Total exceptions raised",
+        ["exception_type", "module"],
+    )
+
+    # ===== Business Metrics =====
+    user_registrations = Counter(
+        "user_registrations_total",
+        "Total user registrations"
+    )
+
+    user_logins = Counter(
+        "user_logins_total",
+        "Total user logins",
+        ["status"],  # success or failure
+    )
+
+    jwt_tokens_issued = Counter(
+        "jwt_tokens_issued_total",
+        "Total JWT tokens issued",
+        ["token_type"],  # access or refresh
+    )
+
+    # ===== System Resource Metrics =====
+    memory_usage_bytes = Gauge(
+        "process_memory_bytes",
+        "Process memory usage in bytes"
+    )
+
+    cpu_usage_percent = Gauge(
+        "process_cpu_percent",
+        "Process CPU usage percentage"
     )
 
     PROMETHEUS_AVAILABLE = True
@@ -58,11 +174,47 @@ except ImportError:
                 yield
             return noop()
 
+    # Basic metrics
     request_counter = _NoopMetric()
     request_duration = _NoopMetric()
+    
+    # Auth metrics
+    auth_failures = _NoopMetric()
+    rate_limit_exceeded = _NoopMetric()
+    active_api_keys = _NoopMetric()
+    
+    # Skill metrics
     skill_execution_counter = _NoopMetric()
+    skill_execution_duration = _NoopMetric()
+    
+    # Session metrics
     active_sessions = _NoopMetric()
+    session_duration = _NoopMetric()
+    
+    # LLM metrics
     llm_latency = _NoopMetric()
+    llm_calls_total = _NoopMetric()
+    llm_token_usage = _NoopMetric()
+    llm_errors = _NoopMetric()
+    
+    # Wiki metrics
+    wiki_articles_total = _NoopMetric()
+    wiki_feedback_submitted = _NoopMetric()
+    wiki_low_confidence_alerts = _NoopMetric()
+    wiki_compilation_duration = _NoopMetric()
+    
+    # Error metrics
+    api_error_rate = _NoopMetric()
+    exception_count = _NoopMetric()
+    
+    # Business metrics
+    user_registrations = _NoopMetric()
+    user_logins = _NoopMetric()
+    jwt_tokens_issued = _NoopMetric()
+    
+    # System metrics
+    memory_usage_bytes = _NoopMetric()
+    cpu_usage_percent = _NoopMetric()
 
 
 def get_metrics():

@@ -26,6 +26,7 @@ playwright>=1.44.0
 # ===== 监控与日志 =====
 prometheus-client>=0.20.0
 structlog>=24.2.0
+psutil>=5.9.0           # System resource monitoring
 
 # ===== 安全与速率限制 =====
 slowapi>=0.1.9          # Rate limiting for FastAPI

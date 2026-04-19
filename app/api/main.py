@@ -94,6 +94,20 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     logger.info("Rate limiter initialized with default limit: 200/minute")
 
+    # ===== Monitoring & Observability Setup (Phase 3) =====
+    try:
+        from prometheus_client import make_asgi_app
+        metrics_app = make_asgi_app()
+        app.mount("/metrics", metrics_app)
+        logger.info("Prometheus metrics endpoint mounted at /metrics")
+    except ImportError:
+        logger.warning("prometheus-client not installed, metrics endpoint disabled")
+    
+    # Start system resource monitor
+    from app.monitoring.system_monitor import system_monitor
+    system_monitor.start()
+    logger.info("System resource monitor started")
+
     # CORS
     app.add_middleware(
         CORSMiddleware,
@@ -137,6 +151,8 @@ def create_app() -> FastAPI:
         
         Rate limit: 30 requests per minute per IP address
         """
+        from app.monitoring.metrics import llm_calls_total, llm_latency, exception_count
+        
         session_id = req.session_id or str(uuid.uuid4())
         request_id = str(uuid.uuid4())
 
@@ -263,16 +279,17 @@ def create_app() -> FastAPI:
         
         Rate limit: 10 requests per minute per IP
         Authentication: Required (X-API-Key header)
-        
-        Args:
-            req: Feedback request with entry_id, is_positive, and optional comment
-            current_user: Authenticated user from API key
-            
-        Returns:
-            Feedback summary with updated statistics
         """
+        from app.monitoring.metrics import wiki_feedback_submitted, wiki_low_confidence_alerts
+        
         try:
-            logger.info(f"Feedback submitted by user: {current_user.user_id} for article: {req.entry_id}")
+            # Get article
+            article = wiki_engine.get_article(req.entry_id)
+            if not article:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"Wiki article not found: {req.entry_id}"
+                )
             
             # Submit feedback to wiki engine
             success = wiki_engine.submit_feedback(
@@ -294,6 +311,13 @@ def create_app() -> FastAPI:
                     status_code=500,
                     detail="Failed to retrieve updated article"
                 )
+            
+            # Increment feedback submitted metric
+            wiki_feedback_submitted.labels(is_positive=req.is_positive).inc()
+            
+            # Check if confidence is below threshold
+            if article.confidence < 0.7:
+                wiki_low_confidence_alerts.inc()
             
             return WikiFeedbackResponse(
                 success=True,

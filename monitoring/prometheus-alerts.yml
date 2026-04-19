@@ -1,0 +1,204 @@
+# Prometheus Alert Rules for Chatbot API
+# Place this file in your Prometheus configuration directory
+
+groups:
+  # ===== High Priority Alerts =====
+  - name: critical_alerts
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighAPIErrorRate
+        expr: rate(api_error_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High API error rate detected"
+          description: "Error rate is {{ $value }} errors/sec on endpoint {{ $labels.endpoint }}"
+          runbook_url: "https://wiki.example.com/runbooks/high-error-rate"
+      
+      # Service down
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Service instance is down"
+          description: "Instance {{ $labels.instance }} has been down for more than 1 minute"
+      
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: process_memory_bytes > 1073741824  # 1 GB
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanize1024 }}B"
+      
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: process_cpu_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}%"
+
+  # ===== Authentication & Security Alerts =====
+  - name: security_alerts
+    interval: 30s
+    rules:
+      # Brute force detection
+      - alert: PossibleBruteForceAttack
+        expr: rate(authentication_failures_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "Possible brute force attack detected"
+          description: "{{ $value }} auth failures/sec on {{ $labels.endpoint }}"
+      
+      # Rate limit violations
+      - alert: ExcessiveRateLimiting
+        expr: rate(rate_limit_exceeded_total[5m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Excessive rate limiting triggered"
+          description: "{{ $value }} rate limit violations/sec"
+
+  # ===== LLM Performance Alerts =====
+  - name: llm_performance_alerts
+    interval: 30s
+    rules:
+      # Slow LLM responses
+      - alert: SlowLLMResponse
+        expr: histogram_quantile(0.95, rate(llm_call_duration_seconds_bucket[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "LLM response time is too slow"
+          description: "95th percentile latency is {{ $value }}s for model {{ $labels.model }}"
+      
+      # LLM error rate
+      - alert: HighLLMErrorRate
+        expr: rate(llm_errors_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "High LLM API error rate"
+          description: "Error rate is {{ $value }} errors/sec for model {{ $labels.model }}"
+      
+      # Token usage spike
+      - alert: UnusualTokenUsage
+        expr: rate(llm_tokens_total[1h]) > 10000
+        for: 10m
+        labels:
+          severity: info
+          team: finance
+        annotations:
+          summary: "Unusual token usage detected"
+          description: "Token consumption rate is {{ $value }} tokens/sec"
+
+  # ===== Wiki Knowledge Base Alerts =====
+  - name: wiki_alerts
+    interval: 60s
+    rules:
+      # Low confidence articles
+      - alert: MultipleLowConfidenceArticles
+        expr: increase(wiki_low_confidence_alerts_total[1h]) > 5
+        for: 10m
+        labels:
+          severity: warning
+          team: knowledge
+        annotations:
+          summary: "Multiple wiki articles have low confidence"
+          description: "{{ $value }} low-confidence alerts in the last hour"
+      
+      # Wiki compilation failure
+      - alert: WikiCompilationSlow
+        expr: histogram_quantile(0.95, rate(wiki_compilation_duration_seconds_bucket[10m])) > 60
+        for: 5m
+        labels:
+          severity: warning
+          team: knowledge
+        annotations:
+          summary: "Wiki compilation is taking too long"
+          description: "95th percentile compilation time is {{ $value }}s"
+      
+      # Negative feedback spike
+      - alert: NegativeFeedbackSpike
+        expr: rate(wiki_feedback_total{is_positive="false"}[1h]) > 0.1
+        for: 15m
+        labels:
+          severity: warning
+          team: product
+        annotations:
+          summary: "Spike in negative wiki feedback"
+          description: "Negative feedback rate is {{ $value }}/sec"
+
+  # ===== Business Metrics Alerts =====
+  - name: business_alerts
+    interval: 60s
+    rules:
+      # User registration drop
+      - alert: UserRegistrationDrop
+        expr: rate(user_registrations_total[1h]) < 0.001
+        for: 1h
+        labels:
+          severity: info
+          team: product
+        annotations:
+          summary: "User registrations have dropped significantly"
+          description: "Registration rate is {{ $value }}/sec"
+      
+      # Login failure rate
+      - alert: HighLoginFailureRate
+        expr: rate(user_logins_total{status="failure"}[5m]) / rate(user_logins_total[5m]) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High login failure rate"
+          description: "{{ $value | humanizePercentage }} of login attempts are failing"
+
+  # ===== Skill Execution Alerts =====
+  - name: skill_alerts
+    interval: 30s
+    rules:
+      # Skill execution failures
+      - alert: SkillExecutionFailures
+        expr: rate(skill_executions_total{status="error"}[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Skill execution failures detected"
+          description: "Error rate is {{ $value }}/sec for skill {{ $labels.skill_name }}"
+      
+      # Slow skill execution
+      - alert: SlowSkillExecution
+        expr: histogram_quantile(0.95, rate(skill_execution_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Skill execution is too slow"
+          description: "95th percentile execution time is {{ $value }}s for {{ $labels.skill_name }}"
