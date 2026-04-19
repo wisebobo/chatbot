@@ -10,7 +10,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - APP_ENV=development
+      - APP_ENV=${APP_ENV:-development}
       - LLM_API_BASE_URL=${LLM_API_BASE_URL}
       - LLM_API_KEY=${LLM_API_KEY}
       - LDAP_SERVER_URL=${LDAP_SERVER_URL}
@@ -18,8 +18,13 @@ services:
       - LDAP_DOMAIN=${LDAP_DOMAIN}
       - JWT_SECRET=${JWT_SECRET}
       - API_SECRET_KEY=${API_SECRET_KEY}
+      # Database configuration
+      - POSTGRES_DSN=postgresql://chatbot_user:chatbot_password@postgres:5432/chatbot_db
     volumes:
       - ./data/wiki:/app/data/wiki
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/auth/health"]
@@ -29,6 +34,45 @@ services:
       start_period: 10s
     networks:
       - chatbot-network
+
+  # PostgreSQL Database (for development/testing with Docker)
+  postgres:
+    image: postgres:16-alpine
+    container_name: chatbot-postgres
+    environment:
+      POSTGRES_DB: chatbot_db
+      POSTGRES_USER: chatbot_user
+      POSTGRES_PASSWORD: chatbot_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatbot_user -d chatbot_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - chatbot-network
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: chatbot-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@company.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - chatbot-network
+    profiles:
+      - monitoring
 
   # Optional: Prometheus for monitoring
   prometheus:
@@ -67,6 +111,7 @@ services:
       - monitoring
 
 volumes:
+  postgres-data:
   prometheus-data:
   grafana-data:
 
