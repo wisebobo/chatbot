@@ -14,6 +14,14 @@ This directory contains detailed technical guides for the LangGraph Enterprise A
 | [Monitoring & Observability Guide](PHASE3_MONITORING_GUIDE.md) | Phase 3 implementation: Prometheus metrics, Grafana dashboard, alert rules | 23 KB |
 | [Exception Handling Guide](EXCEPTION_HANDLING_GUIDE.md) | **NEW**: Custom exceptions, retry, circuit breaker, global error handler | 14 KB |
 
+### Testing & Quality Assurance
+
+| Document | Description | Size |
+|----------|-------------|------|
+| [Testing Guide](TESTING_GUIDE.md) | Complete testing strategy with 169 tests, best practices | 12 KB |
+| [Test Implementation Summary](TEST_IMPLEMENTATION_SUMMARY.md) | Test status, coverage reports, and improvement plan | 8 KB |
+| [Test Coverage Improvement Report](TEST_COVERAGE_IMPROVEMENT_REPORT.md) | **NEW**: Detailed analysis of 93% pass rate, 71 new tests, performance metrics | 10 KB |
+
 ### Database & Persistence
 
 | Document | Description | Size |
