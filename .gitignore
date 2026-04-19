@@ -50,27 +50,37 @@ coverage.xml
 .ipynb_checkpoints
 *.ipynb
 
-# ===== Environment Variables =====
-.env
-.env.local
-.env.*.local
-!.env.example
-
 # ===== Logs =====
 *.log
 logs/
-*.log.*
 
 # ===== Database =====
 *.db
 *.sqlite
 *.sqlite3
 
+# ===== Environment Files =====
+.env
+.env.local
+.env.*.local
+# Keep example file
+!.env.example
+
+# ===== Docker =====
+docker-compose.override.yml
+
+# ===== Kubernetes Secrets (NEVER commit) =====
+k8s/*secret*.yaml
+!k8s/README.md
+
+# ===== Data (mounted as volumes in production) =====
+data/wiki/*.json
+data/wiki_demo/*.json
+# Keep directory structure
+!data/.gitkeep
+
 # ===== Temporary Files =====
 *.tmp
-*.temp
-tmp/
-temp/
 *.bak
 *.backup
 
@@ -79,20 +89,5 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-
-# ===== Project Specific =====
-# Wiki data (generated content)
-data/wiki/
-data/wiki_demo/
-
-# Backup files
-.env.backup
-*.backup
-
-# Test outputs
-test_results/
-outputs/
-
-# Local configuration
-config.local.json
-settings.local.json
+.Spotlight-V100
+.Trashes

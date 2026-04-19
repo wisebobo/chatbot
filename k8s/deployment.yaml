@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatbot-deployment
+  namespace: chatbot
+  labels:
+    app: chatbot
+    version: v3.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: chatbot
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: chatbot
+        version: v3.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Use image pull secrets if using private registry
+      # imagePullSecrets:
+      #   - name: registry-secret
+      
+      containers:
+        - name: chatbot
+          image: chatbot:latest  # Replace with your actual image registry
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          
+          # Environment variables from ConfigMap and Secret
+          envFrom:
+            - configMapRef:
+                name: chatbot-config
+            - secretRef:
+                name: chatbot-secrets
+          
+          # Additional environment variables
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+          
+          # Resource limits and requests
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          
+          # Health checks
+          livenessProbe:
+            httpGet:
+              path: /api/v1/auth/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /api/v1/auth/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          # Volume mounts
+          volumeMounts:
+            - name: wiki-data
+              mountPath: /app/data/wiki
+            - name: tmp-volume
+              mountPath: /tmp
+        
+        # Optional: Sidecar container for log aggregation
+        # - name: log-aggregator
+        #   image: fluent/fluentd:v1.16-1
+        #   volumeMounts:
+        #     - name: varlog
+        #       mountPath: /var/log
+      
+      # Volumes
+      volumes:
+        - name: wiki-data
+          persistentVolumeClaim:
+            claimName: chatbot-wiki-pvc
+        - name: tmp-volume
+          emptyDir: {}
+        # - name: varlog
+        #   emptyDir: {}
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      
+      # Node selector (optional)
+      # nodeSelector:
+      #   kubernetes.io/os: linux
+      
+      # Tolerations (optional)
+      # tolerations:
+      #   - key: "node-type"
+      #     operator: "Equal"
+      #     value: "production"
+      #     effect: "NoSchedule"
+      
+      # Affinity rules (optional)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - chatbot
+                topologyKey: kubernetes.io/hostname

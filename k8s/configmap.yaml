@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chatbot-config
+  namespace: chatbot
+  labels:
+    app: chatbot
+data:
+  # Application Configuration
+  APP_ENV: "production"
+  APP_NAME: "LangGraph Enterprise Agent Platform"
+  APP_DEBUG: "false"
+  
+  # LLM Configuration
+  LLM_API_BASE_URL: "http://your-company-ai-platform/v1"
+  LLM_MODEL_NAME: "qwen-turbo"
+  LLM_TEMPERATURE: "0.0"
+  LLM_MAX_TOKENS: "4096"
+  LLM_REQUEST_TIMEOUT: "60"
+  LLM_MAX_RETRIES: "3"
+  
+  # API Service Configuration
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  API_WORKERS: "4"
+  API_RELOAD: "false"
+  API_PREFIX: "/api/v1"
+  
+  # JWT Configuration
+  ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  REFRESH_TOKEN_EXPIRE_DAYS: "7"
+  
+  # LDAP Configuration
+  LDAP_SERVER_URL: "ldaps://ad.company.com"
+  LDAP_BASE_DN: "DC=company,DC=com"
+  LDAP_DOMAIN: "COMPANY"
+  LDAP_USE_SSL: "true"
+  LDAP_AUTH_METHOD: "ntlm"
+  
+  # Monitoring Configuration
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  ENABLE_PROMETHEUS: "true"
+  
+  # RAG Configuration (if using)
+  RAG_DEFAULT_TOP_K: "5"
+  RAG_MIN_RELEVANCE_SCORE: "0.7"
+  RAG_REQUEST_TIMEOUT: "30"
+  
+  # Wiki Configuration
+  WIKI_EXACT_MATCH_DEFAULT: "false"
+  WIKI_MAX_CONTENT_LENGTH: "5000"
+  WIKI_REQUEST_TIMEOUT: "30"

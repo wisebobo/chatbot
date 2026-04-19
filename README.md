@@ -16,6 +16,8 @@ An enterprise-level Agent platform based on LangGraph, supporting stateful workf
 - [Configuration](#-configuration)
 - [Testing](#-testing)
 - [Deployment](#-deployment)
+  - [Docker Deployment](#docker-deployment)
+  - [Kubernetes Deployment](#kubernetes-deployment)
 - [Troubleshooting](#-troubleshooting)
 
 ---
@@ -602,7 +604,7 @@ uvicorn app.api.main:app --reload --host 0.0.0.0 --port 8000
 
 ### Production
 
-**Option 1: Uvicorn Workers**
+#### Option 1: Uvicorn Workers
 ```bash
 uvicorn app.api.main:app \
   --host 0.0.0.0 \
@@ -611,7 +613,7 @@ uvicorn app.api.main:app \
   --no-reload
 ```
 
-**Option 2: Gunicorn + Uvicorn**
+#### Option 2: Gunicorn + Uvicorn
 ```bash
 pip install gunicorn
 gunicorn app.api.main:app \
@@ -620,31 +622,141 @@ gunicorn app.api.main:app \
   --bind 0.0.0.0:8000
 ```
 
-**Option 3: Docker**
-```dockerfile
-FROM python:3.11-slim
+---
 
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+## ☸️ Kubernetes Deployment
 
-COPY . .
+### Prerequisites
 
-CMD ["uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+- Kubernetes cluster (v1.24+)
+- kubectl configured
+- Docker (for building images)
+
+### Quick Deployment
+
+#### Linux/Mac:
+```bash
+cd k8s
+chmod +x deploy.sh
+./deploy.sh production latest
 ```
+
+#### Windows PowerShell:
+```powershell
+cd k8s
+.\deploy.ps1 -Environment production -ImageTag latest
+```
+
+### Manual Deployment with Kustomize
+
+```bash
+# Apply all resources
+kubectl apply -k k8s/
+
+# Verify deployment
+kubectl get all -n chatbot
+```
+
+### Key Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Namespace | `k8s/namespace.yaml` | Isolated namespace |
+| ConfigMap | `k8s/configmap.yaml` | Non-sensitive configuration |
+| Secret | `k8s/secret.yaml` | Sensitive credentials |
+| Deployment | `k8s/deployment.yaml` | Application pods (3 replicas) |
+| Service | `k8s/service.yaml` | Internal load balancing |
+| Ingress | `k8s/ingress.yaml` | External access with TLS |
+| PVC | `k8s/pvc.yaml` | Persistent Wiki data |
+| HPA | `k8s/hpa.yaml` | Auto-scaling (3-10 pods) |
+| NetworkPolicy | `k8s/networkpolicy.yaml` | Network security |
+
+### Configuration Steps
+
+1. **Update Secrets** (`k8s/secret.yaml`)
+   ```yaml
+   LLM_API_KEY: "your-actual-key"
+   JWT_SECRET: "strong-random-string"
+   LDAP_BIND_PASSWORD: "ad-service-account-password"
+   ```
+
+2. **Update ConfigMap** (`k8s/configmap.yaml`)
+   ```yaml
+   LLM_API_BASE_URL: "http://your-ai-platform/v1"
+   LDAP_SERVER_URL: "ldaps://ad.company.com"
+   ```
+
+3. **Configure Ingress** (`k8s/ingress.yaml`)
+   ```yaml
+   host: chatbot.your-company.com  # Your domain
+   ```
+
+4. **Build and Push Image**
+   ```bash
+   docker build -t registry.company.com/chatbot:latest .
+   docker push registry.company.com/chatbot:latest
+   ```
+
+5. **Update Deployment Image**
+   ```bash
+   kubectl set image deployment/chatbot-deployment \
+     chatbot=registry.company.com/chatbot:latest \
+     -n chatbot
+   ```
+
+### Monitoring & Scaling
+
+```bash
+# Check pod status
+kubectl get pods -n chatbot
+
+# View logs
+kubectl logs -l app=chatbot -n chatbot -f
+
+# Port forward for testing
+kubectl port-forward svc/chatbot-service 8000:80 -n chatbot
+
+# Scale manually
+kubectl scale deployment/chatbot-deployment --replicas=5 -n chatbot
+
+# Check auto-scaling
+kubectl get hpa -n chatbot -w
+```
+
+### Rolling Updates & Rollbacks
+
+```bash
+# Update image
+kubectl set image deployment/chatbot-deployment \
+  chatbot=chatbot:v3.1.0 -n chatbot
+
+# Monitor rollout
+kubectl rollout status deployment/chatbot-deployment -n chatbot
+
+# Rollback if needed
+kubectl rollout undo deployment/chatbot-deployment -n chatbot
+```
+
+For complete K8s documentation, see:
+- **[K8s Deployment Guide](k8s/README.md)** - Comprehensive guide
+- **[Quick Reference](k8s/QUICK_REFERENCE.md)** - Common commands
+
+---
 
 ### Pre-Deployment Checklist
 
 - [ ] Change `API_SECRET_KEY` to strong random value
-- [ ] Update default user passwords (admin, testuser)
+- [ ] Configure LDAP service account credentials
 - [ ] Configure proper LLM API credentials
 - [ ] Set up database (PostgreSQL) if using persistent checkpointer
-- [ ] Enable HTTPS/TLS
+- [ ] Enable HTTPS/TLS for production
 - [ ] Configure firewall rules (restrict `/metrics` access)
 - [ ] Set up log rotation
 - [ ] Configure backup for wiki data (`data/wiki/`)
 - [ ] Test alert notifications
 - [ ] Review rate limiting thresholds
+- [ ] Configure resource limits in K8s deployment
+- [ ] Set up external secret management (Vault/AWS Secrets Manager)
 
 ---
 

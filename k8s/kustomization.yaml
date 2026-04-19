@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: chatbot
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - pvc.yaml
+  - hpa.yaml
+  - networkpolicy.yaml
+
+# Common labels for all resources
+commonLabels:
+  app.kubernetes.io/name: chatbot
+  app.kubernetes.io/version: v3.0.0
+  app.kubernetes.io/managed-by: kustomize
+
+# ConfigMap generator (optional, for dynamic configs)
+# configMapGenerator:
+#   - name: chatbot-config
+#     literals:
+#       - APP_ENV=production
+
+# Secret generator (optional, requires external tool)
+# secrets from files:
+# secretGenerator:
+#   - name: chatbot-secrets
+#     files:
+#       - LLM_API_KEY=./secrets/llm_api_key.txt
+#       - JWT_SECRET=./secrets/jwt_secret.txt
