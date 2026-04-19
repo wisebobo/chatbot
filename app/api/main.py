@@ -26,6 +26,7 @@ from app.skills.wiki_skill import WikiSkill
 from app.state.agent_state import AgentState, WorkflowStatus
 from app.wiki.engine import LocalWikiEngine
 from app.api.auth import get_api_key, get_optional_api_key, APIUser
+from app.api.auth_routes import router as auth_router
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,10 @@ def create_app() -> FastAPI:
     skill_registry.register(RagSkill())
     skill_registry.register(WikiSkill())
     logger.info(f"Registered skills: {skill_registry.list_skill_names()}")
+
+    # Register authentication routes
+    app.include_router(auth_router, prefix=settings.api.api_prefix)
+    logger.info("Registered authentication routes: /auth/register, /auth/login, /auth/refresh, /auth/me")
 
     # Initialize wiki engine for feedback API (use same directory as example script)
     wiki_engine = LocalWikiEngine(storage_dir="data/wiki_demo")

@@ -29,7 +29,9 @@ structlog>=24.2.0
 
 # ===== 安全与速率限制 =====
 slowapi>=0.1.9          # Rate limiting for FastAPI
-pyjwt>=2.8.0            # JWT support (preparation for Phase 2)
+pyjwt>=2.8.0            # JWT support
+passlib[bcrypt]>=1.7.4  # Password hashing
+email-validator>=2.1.0  # Email validation for Pydantic
 
 # ===== 开发与测试 =====
 pytest>=8.2.0
