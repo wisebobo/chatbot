@@ -9,7 +9,8 @@ This directory contains detailed technical guides for the LangGraph Enterprise A
 | Document | Description | Size |
 |----------|-------------|------|
 | [API Authentication & Rate Limiting](API_AUTH_AND_RATE_LIMITING_GUIDE.md) | Phase 1 implementation: API key auth, rate limiting with slowapi | 12 KB |
-| [JWT Authentication Guide](JWT_AUTHENTICATION_GUIDE.md) | Phase 2 implementation: JWT tokens, user management, role-based access | 15 KB |
+| [LDAP Integration Guide](LDAP_INTEGRATION_GUIDE.md) | **NEW**: Active Directory authentication via LDAP protocol | 8 KB |
+| [JWT Authentication Guide](JWT_AUTHENTICATION_GUIDE.md) | JWT token management and validation (updated for LDAP) | 15 KB |
 | [Monitoring & Observability Guide](PHASE3_MONITORING_GUIDE.md) | Phase 3 implementation: Prometheus metrics, Grafana dashboard, alert rules | 23 KB |
 
 ### Knowledge Management
@@ -44,8 +45,8 @@ Use the detailed guides in this directory when you need:
 
 ### For New Users
 1. Start with [README.md](../README.md)
-2. Read [RAG Integration Guide](RAG_INTEGRATION_GUIDE.md) if using knowledge base
-3. Read [JWT Authentication Guide](JWT_AUTHENTICATION_GUIDE.md) for user management
+2. Read [LDAP Integration Guide](LDAP_INTEGRATION_GUIDE.md) for authentication setup
+3. Read [RAG Integration Guide](RAG_INTEGRATION_GUIDE.md) if using knowledge base
 
 ### For Developers
 1. [LLM Wiki Compiler Guide](LLM_WIKI_COMPILER_GUIDE.md) - Understanding wiki architecture
@@ -53,9 +54,10 @@ Use the detailed guides in this directory when you need:
 3. [Monitoring Guide](PHASE3_MONITORING_GUIDE.md) - Setting up observability
 
 ### For DevOps/Admins
-1. [API Auth & Rate Limiting](API_AUTH_AND_RATE_LIMITING_GUIDE.md) - Security setup
-2. [Monitoring Guide](PHASE3_MONITORING_GUIDE.md) - Prometheus/Grafana deployment
-3. [Local Wiki Engine](LOCAL_WIKI_ENGINE_GUIDE.md) - Backup and recovery
+1. [LDAP Integration Guide](LDAP_INTEGRATION_GUIDE.md) - AD authentication setup
+2. [API Auth & Rate Limiting](API_AUTH_AND_RATE_LIMITING_GUIDE.md) - Security setup
+3. [Monitoring Guide](PHASE3_MONITORING_GUIDE.md) - Prometheus/Grafana deployment
+4. [Local Wiki Engine](LOCAL_WIKI_ENGINE_GUIDE.md) - Backup and recovery
 
 ## 🔗 Related Resources
 
@@ -67,5 +69,5 @@ Use the detailed guides in this directory when you need:
 ---
 
 **Last Updated:** 2026-04-19  
-**Total Documents:** 10 guides  
+**Total Documents:** 11 guides  
 **Purpose:** Detailed technical reference documentation

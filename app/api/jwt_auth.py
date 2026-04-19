@@ -1,19 +1,18 @@
 """
 JWT Authentication Module
-Provides token-based authentication with user management
+Provides token generation and validation for LDAP-authenticated users
 """
 import logging
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import jwt
-import hashlib
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 # JWT Configuration
-JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production-please-use-env-variable")
+JWT_SECRET = os.getenv("JWT_SECRET", "change-this-to-a-strong-random-secret-key-in-production")
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
@@ -31,69 +30,11 @@ class TokenData(BaseModel):
     """Decoded token data"""
     user_id: str
     username: str
+    email: Optional[str] = ""
+    display_name: Optional[str] = ""
     role: str
-    exp: datetime
-
-
-class UserCreate(BaseModel):
-    """User registration request model"""
-    username: str = Field(..., min_length=3, max_length=50)
-    email: EmailStr
-    password: str = Field(..., min_length=8, max_length=128)
-
-
-class UserLogin(BaseModel):
-    """User login request model"""
-    username: str
-    password: str
-
-
-class UserResponse(BaseModel):
-    """User response model (excludes sensitive data)"""
-    user_id: str
-    username: str
-    email: str
-    role: str
-    is_active: bool
-    created_at: str
-
-
-class UserInDB(BaseModel):
-    """User model stored in database"""
-    user_id: str
-    username: str
-    email: str
-    hashed_password: str
-    role: str = "user"
-    is_active: bool = True
-    created_at: datetime = None
-    
-    def __init__(self, **data):
-        if 'created_at' not in data or data['created_at'] is None:
-            data['created_at'] = datetime.now(timezone.utc)
-        super().__init__(**data)
-
-
-def hash_password(password: str) -> str:
-    """Hash a password using SHA-256 with salt"""
-    # Generate a random salt
-    import secrets
-    salt = secrets.token_hex(16)
-    # Hash password with salt
-    hashed = hashlib.sha256((password + salt).encode()).hexdigest()
-    # Return salt:hash format
-    return f"{salt}:{hashed}"
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash"""
-    try:
-        salt, hash_value = hashed_password.split(":")
-        hashed = hashlib.sha256((plain_password + salt).encode()).hexdigest()
-        return hashed == hash_value
-    except Exception as e:
-        logger.error(f"Password verification error: {e}")
-        return False
+    dn: Optional[str] = ""
+    exp: Optional[datetime] = None
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -130,8 +71,11 @@ def decode_token(token: str) -> TokenData:
         return TokenData(
             user_id=user_id,
             username=username,
+            email=payload.get("email", ""),
+            display_name=payload.get("display_name", username),
             role=role,
-            exp=datetime.fromtimestamp(exp, tz=timezone.utc)
+            dn=payload.get("dn", ""),
+            exp=datetime.fromtimestamp(exp, tz=timezone.utc) if exp else None
         )
     except jwt.ExpiredSignatureError:
         raise jwt.InvalidTokenError("Token has expired")

@@ -127,14 +127,9 @@ try:
     )
 
     # ===== Business Metrics =====
-    user_registrations = Counter(
-        "user_registrations_total",
-        "Total user registrations"
-    )
-
     user_logins = Counter(
         "user_logins_total",
-        "Total user logins",
+        "Total user logins via LDAP",
         ["status"],  # success or failure
     )
 
@@ -142,6 +137,13 @@ try:
         "jwt_tokens_issued_total",
         "Total JWT tokens issued",
         ["token_type"],  # access or refresh
+    )
+
+    ldap_auth_duration = Histogram(
+        "ldap_authentication_duration_seconds",
+        "LDAP authentication duration in seconds",
+        ["status"],
+        buckets=[0.1, 0.5, 1.0, 2.0, 5.0],
     )
 
     # ===== System Resource Metrics =====
@@ -154,69 +156,3 @@ try:
         "process_cpu_percent",
         "Process CPU usage percentage"
     )
-
-    PROMETHEUS_AVAILABLE = True
-
-except ImportError:
-    # Provide a no-op implementation when Prometheus is not installed
-    PROMETHEUS_AVAILABLE = False
-
-    class _NoopMetric:
-        def labels(self, **kwargs): return self
-        def inc(self, *a, **kw): pass
-        def dec(self, *a, **kw): pass
-        def set(self, *a, **kw): pass
-        def observe(self, *a, **kw): pass
-        def time(self): 
-            from contextlib import contextmanager
-            @contextmanager
-            def noop():
-                yield
-            return noop()
-
-    # Basic metrics
-    request_counter = _NoopMetric()
-    request_duration = _NoopMetric()
-    
-    # Auth metrics
-    auth_failures = _NoopMetric()
-    rate_limit_exceeded = _NoopMetric()
-    active_api_keys = _NoopMetric()
-    
-    # Skill metrics
-    skill_execution_counter = _NoopMetric()
-    skill_execution_duration = _NoopMetric()
-    
-    # Session metrics
-    active_sessions = _NoopMetric()
-    session_duration = _NoopMetric()
-    
-    # LLM metrics
-    llm_latency = _NoopMetric()
-    llm_calls_total = _NoopMetric()
-    llm_token_usage = _NoopMetric()
-    llm_errors = _NoopMetric()
-    
-    # Wiki metrics
-    wiki_articles_total = _NoopMetric()
-    wiki_feedback_submitted = _NoopMetric()
-    wiki_low_confidence_alerts = _NoopMetric()
-    wiki_compilation_duration = _NoopMetric()
-    
-    # Error metrics
-    api_error_rate = _NoopMetric()
-    exception_count = _NoopMetric()
-    
-    # Business metrics
-    user_registrations = _NoopMetric()
-    user_logins = _NoopMetric()
-    jwt_tokens_issued = _NoopMetric()
-    
-    # System metrics
-    memory_usage_bytes = _NoopMetric()
-    cpu_usage_percent = _NoopMetric()
-
-
-def get_metrics():
-    """Return the current metrics status summary (for health checks)"""
-    return {"prometheus_available": PROMETHEUS_AVAILABLE}

@@ -198,39 +198,57 @@ graph TD
   curl -H "X-API-Key: your-api-key" http://localhost:8000/api/v1/chat
   ```
 
-#### Phase 2: JWT Authentication
-- **User Registration/Login**: Full user management system
+#### Phase 2: LDAP + JWT Authentication
+- **Active Directory Integration**: Authenticate users against company AD via LDAP
+- **LDAP Support**: Both simple bind and NTLM authentication methods
 - **Token-Based Auth**: Access tokens (30min) + Refresh tokens (7 days)
-- **Role-Based Access**: Admin and user roles with different permissions
-- **Password Security**: SHA-256 hashing with salt
+- **Role-Based Access**: Admin roles determined by AD group membership
+- **No Local Passwords**: All authentication handled by Active Directory
 
-**JWT Endpoints:**
+**LDAP Configuration:**
+```ini
+# .env file configuration
+LDAP_SERVER_URL=ldaps://ad.company.com
+LDAP_BASE_DN=DC=company,DC=com
+LDAP_DOMAIN=COMPANY
+LDAP_USE_SSL=true
+LDAP_AUTH_METHOD=ntlm
+LDAP_BIND_DN=CN=service_account,OU=Service Accounts,DC=company,DC=com
+LDAP_BIND_PASSWORD=your-service-account-password
+```
+
+**Authentication Endpoints:**
 ```bash
-# Register new user
-POST /api/v1/auth/register
-{
-  "username": "newuser",
-  "email": "user@example.com",
-  "password": "SecurePass123!"
-}
-
-# Login and get tokens
+# Login with AD credentials
 POST /api/v1/auth/login
 {
-  "username": "newuser",
-  "password": "SecurePass123!"
+  "username": "your_ad_username",
+  "password": "your_ad_password"
+}
+
+# Response includes JWT tokens
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "expires_in": 1800
 }
 
 # Access protected endpoint
 GET /api/v1/auth/me
 Headers: Authorization: Bearer <access_token>
+
+# Check LDAP connection health
+GET /api/v1/auth/health
 ```
 
-**Default Users:**
-- admin / admin123456 (admin role)
-- testuser / test123456 (user role)
+**Role Assignment:**
+- User roles are automatically determined based on Active Directory group membership
+- Users in groups containing "Admin", "Administrator", or "IT-Admin" get admin role
+- All other users get the default 'user' role
+- Customize role logic in `auth_routes.py:_determine_role_from_groups()`
 
-⚠️ **Security Note**: Change default passwords in production!
+⚠️ **Security Note**: Configure LDAP service account credentials securely. Never commit `.env` file to version control.
 
 ### Skills System
 
@@ -711,8 +729,9 @@ playwright install chromium
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
 **Recent Highlights:**
+- ✅ **LDAP Integration**: Active Directory authentication via LDAP (replaced user registration)
 - ✅ Phase 3: Monitoring & Observability (40+ metrics, 16 alerts, Grafana dashboard)
-- ✅ Phase 2: JWT Authentication (user management, token refresh, role-based access)
+- ✅ Phase 2: JWT Authentication (token management, role-based access)
 - ✅ Phase 1: API Key Auth + Rate Limiting (endpoint protection, slowapi integration)
 - ✅ LLM Wiki Compiler v2.0 (one-shot generation, deduplication, version history)
 - ✅ Local Wiki Engine (file-based storage, offline capability)

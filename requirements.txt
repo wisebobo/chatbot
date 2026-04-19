@@ -15,7 +15,7 @@ pydantic-settings>=2.3.0
 python-dotenv>=1.0.0
 
 # ===== 持久化（生产环境）=====
-# langgraph-checkpoint-postgres>=1.0.0  # 启用 PostgreSQL checkpointer
+# langgraph-checkpoint-postgres>=1.0.0  # Enable PostgreSQL checkpointer
 psycopg2-binary>=2.9.9
 redis>=5.0.0
 
@@ -28,14 +28,14 @@ prometheus-client>=0.20.0
 structlog>=24.2.0
 psutil>=5.9.0           # System resource monitoring
 
-# ===== 安全与速率限制 =====
+# ===== 安全与认证 =====
 slowapi>=0.1.9          # Rate limiting for FastAPI
 pyjwt>=2.8.0            # JWT support
 passlib[bcrypt]>=1.7.4  # Password hashing
-email-validator>=2.1.0  # Email validation for Pydantic
+ldap3>=2.9.1            # LDAP/Active Directory authentication
 
 # ===== 开发与测试 =====
 pytest>=8.2.0
 pytest-asyncio>=0.23.0
 pytest-cov>=5.0.0
-httpx>=0.27.0   # 用于 FastAPI 测试客户端
+httpx>=0.27.0   # For FastAPI test client

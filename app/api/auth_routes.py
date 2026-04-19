@@ -1,25 +1,22 @@
 """
 Authentication API Routes
-Provides user registration, login, and token management endpoints
+Provides LDAP-based authentication and JWT token management
 """
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from typing import Optional
+from pydantic import BaseModel
 from jwt import InvalidTokenError
 
 from app.api.jwt_auth import (
-    user_store,
-    UserCreate,
-    UserLogin,
-    Token,
-    UserResponse,
     create_access_token,
     create_refresh_token,
     decode_token,
+    Token,
 )
+from app.api.ldap_auth import get_ldap_authenticator, LDAPAuthenticator
 from app.monitoring.metrics import (
     auth_failures,
-    user_registrations,
     user_logins,
     jwt_tokens_issued,
 )
@@ -29,36 +26,63 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def register_user(user_data: UserCreate):
+class UserLogin(BaseModel):
+    """User login request model"""
+    username: str
+    password: str
+
+
+@router.post("/login", response_model=Token)
+async def login(credentials: UserLogin):
     """
-    Register a new user account
+    Authenticate user against Active Directory via LDAP
     
-    Creates a new user with the provided credentials and returns JWT tokens.
+    Validates username and password against AD, then issues JWT tokens for authenticated session.
     
     Args:
-        user_data: User registration data (username, email, password)
+        credentials: Login credentials (username, password)
         
     Returns:
         JWT access and refresh tokens
         
     Raises:
-        HTTPException: 400 if username or email already exists
+        HTTPException: 401 if credentials are invalid
     """
     try:
-        # Create user in store
-        new_user = user_store.create_user(user_data)
+        # Get LDAP authenticator
+        ldap_auth = get_ldap_authenticator()
         
-        logger.info(f"New user registered: {new_user.username}")
+        # Authenticate against Active Directory
+        success, user_info = ldap_auth.authenticate(credentials.username, credentials.password)
         
-        # Track registration metric
-        user_registrations.inc()
+        if not success or not user_info:
+            # Track failed login
+            auth_failures.labels(endpoint="/auth/login", reason="invalid_credentials").inc()
+            user_logins.labels(status="failure").inc()
+            
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         
-        # Generate tokens
+        # Track successful login
+        user_logins.labels(status="success").inc()
+        
+        logger.info(f"User logged in via LDAP: {credentials.username}")
+        
+        # Determine user role based on AD groups
+        # You can customize this logic based on your AD group structure
+        role = _determine_role_from_groups(user_info.get("groups", []))
+        
+        # Generate JWT tokens with user information from AD
         token_data = {
-            "user_id": new_user.user_id,
-            "username": new_user.username,
-            "role": new_user.role
+            "user_id": user_info.get("username", credentials.username),
+            "username": credentials.username,
+            "email": user_info.get("email", ""),
+            "display_name": user_info.get("display_name", credentials.username),
+            "role": role,
+            "dn": user_info.get("dn", "")
         }
         
         access_token = create_access_token(token_data)
@@ -75,70 +99,37 @@ async def register_user(user_data: UserCreate):
             expires_in=1800  # 30 minutes
         )
         
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Registration error: {e}", exc_info=True)
+        logger.error(f"Login error: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed"
+            detail="Authentication service unavailable"
         )
 
 
-@router.post("/login", response_model=Token)
-async def login(credentials: UserLogin):
+def _determine_role_from_groups(groups: list[str]) -> str:
     """
-    Authenticate user and return JWT tokens
+    Determine user role based on Active Directory group membership
     
-    Validates username and password, then issues JWT tokens for authenticated session.
+    Customize this function based on your AD group structure.
     
     Args:
-        credentials: Login credentials (username, password)
+        groups: List of AD group DNs the user belongs to
         
     Returns:
-        JWT access and refresh tokens
-        
-    Raises:
-        HTTPException: 401 if credentials are invalid
+        Role string ('admin' or 'user')
     """
-    # Authenticate user
-    user = user_store.authenticate_user(credentials.username, credentials.password)
+    # Example: Check if user is in admin groups
+    admin_group_keywords = ["Admins", "Administrators", "IT-Admin"]
     
-    if not user:
-        # Track failed login
-        auth_failures.labels(endpoint="/auth/login", reason="invalid_credentials").inc()
-        user_logins.labels(status="failure").inc()
-        
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    for group in groups:
+        if any(keyword.lower() in group.lower() for keyword in admin_group_keywords):
+            return "admin"
     
-    # Track successful login
-    user_logins.labels(status="success").inc()
-    
-    logger.info(f"User logged in: {user.username}")
-    
-    # Generate tokens
-    token_data = {
-        "user_id": user.user_id,
-        "username": user.username,
-        "role": user.role
-    }
-    
-    access_token = create_access_token(token_data)
-    refresh_token = create_refresh_token(token_data)
-    
-    return Token(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        expires_in=1800
-    )
+    # Default role
+    return "user"
 
 
 @router.post("/refresh", response_model=Token)
@@ -165,25 +156,20 @@ async def refresh_token(refresh_token: str):
         if token_data.exp.tzinfo is None:
             raise InvalidTokenError("Invalid token format")
         
-        # Check if user still exists and is active
-        user = user_store.get_user_by_username(token_data.username)
-        if not user or not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
-            )
-        
-        # Generate new tokens
+        # Generate new tokens with same user data
         new_token_data = {
-            "user_id": user.user_id,
-            "username": user.username,
-            "role": user.role
+            "user_id": token_data.user_id,
+            "username": token_data.username,
+            "email": getattr(token_data, 'email', ''),
+            "display_name": getattr(token_data, 'display_name', token_data.username),
+            "role": token_data.role,
+            "dn": getattr(token_data, 'dn', '')
         }
         
         new_access_token = create_access_token(new_token_data)
         new_refresh_token = create_refresh_token(new_token_data)
         
-        logger.info(f"Token refreshed for user: {user.username}")
+        logger.info(f"Token refreshed for user: {token_data.username}")
         
         return Token(
             access_token=new_access_token,
@@ -201,50 +187,43 @@ async def refresh_token(refresh_token: str):
         )
 
 
-@router.get("/me", response_model=UserResponse)
-async def get_current_user_info(authorization: Optional[str] = Header(None)):
+@router.get("/me", response_model=dict)
+async def get_current_user_info(authorization: str = Header(...)):
     """
     Get current authenticated user information
     
-    Extracts user info from JWT token in Authorization header.
+    Decodes JWT token and returns user profile information.
     
     Args:
-        authorization: Bearer token from Authorization header
+        authorization: Bearer token header
         
     Returns:
-        User information (excluding sensitive data)
+        User profile information
         
     Raises:
-        HTTPException: 401 if token is missing or invalid
+        HTTPException: 401 if token is invalid
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    token = authorization.split(" ")[1]
-    
     try:
-        token_data = decode_token(token)
-        
-        # Get user from store
-        user = user_store.get_user_by_username(token_data.username)
-        if not user:
+        # Extract token from Authorization header
+        if not authorization.startswith("Bearer "):
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authorization header format"
             )
         
-        return UserResponse(
-            user_id=user.user_id,
-            username=user.username,
-            email=user.email,
-            role=user.role,
-            is_active=user.is_active,
-            created_at=user.created_at.isoformat()
-        )
+        token = authorization.split(" ")[1]
+        
+        # Decode token
+        token_data = decode_token(token)
+        
+        return {
+            "user_id": token_data.user_id,
+            "username": token_data.username,
+            "email": getattr(token_data, 'email', ''),
+            "display_name": getattr(token_data, 'display_name', token_data.username),
+            "role": token_data.role,
+            "exp": token_data.exp.isoformat()
+        }
         
     except InvalidTokenError as e:
         logger.warning(f"Invalid token in /me endpoint: {str(e)}")
@@ -255,106 +234,26 @@ async def get_current_user_info(authorization: Optional[str] = Header(None)):
         )
 
 
-@router.get("/users", response_model=list[UserResponse])
-async def list_all_users(authorization: Optional[str] = Header(None)):
+@router.get("/health")
+async def ldap_health_check():
     """
-    List all users (admin only)
+    Check LDAP connection health
     
-    Requires admin role to access this endpoint.
-    
-    Args:
-        authorization: Bearer token from Authorization header
-        
     Returns:
-        List of all users
-        
-    Raises:
-        HTTPException: 401 if not authenticated, 403 if not admin
+        LDAP server connectivity status
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    token = authorization.split(" ")[1]
-
     try:
-        token_data = decode_token(token)
+        ldap_auth = get_ldap_authenticator()
+        is_connected = ldap_auth.test_connection()
         
-        # Check admin role
-        if token_data.role != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin privileges required"
-            )
-        
-        # List all users
-        users = user_store.list_users()
-        return users
-        
-    except InvalidTokenError as e:
-        logger.warning(f"Invalid token in /users endpoint: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-
-@router.post("/users/{username}/deactivate")
-async def deactivate_user(username: str, authorization: Optional[str] = Header(None)):
-    """
-    Deactivate a user account (admin only)
-    
-    Admins can deactivate user accounts to prevent login.
-    
-    Args:
-        username: Username to deactivate
-        authorization: Bearer token from Authorization header
-        
-    Returns:
-        Success message
-        
-    Raises:
-        HTTPException: 401 if not authenticated, 403 if not admin, 404 if user not found
-    """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    token = authorization.split(" ")[1]
-
-    try:
-        token_data = decode_token(token)
-        
-        # Check admin role
-        if token_data.role != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin privileges required"
-            )
-        
-        # Deactivate user
-        success = user_store.deactivate_user(username)
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"User '{username}' not found"
-            )
-        
-        logger.info(f"User deactivated by admin {token_data.username}: {username}")
-        
-        return {"message": f"User '{username}' has been deactivated"}
-        
-    except InvalidTokenError as e:
-        logger.warning(f"Invalid token in deactivate endpoint: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return {
+            "status": "healthy" if is_connected else "unhealthy",
+            "ldap_server": ldap_auth.server_url,
+            "connected": is_connected
+        }
+    except Exception as e:
+        logger.error(f"LDAP health check failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e)
+        }
