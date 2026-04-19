@@ -41,6 +41,13 @@ This directory contains detailed technical guides for the LangGraph Enterprise A
 | [Wiki Feedback API Guide](WIKI_FEEDBACK_API_GUIDE.md) | User feedback system for wiki articles with confidence scoring | 14 KB |
 | [Wiki Integration Guide](WIKI_INTEGRATION_GUIDE.md) | Complete wiki integration guide with examples | 10 KB |
 
+### API & Integration
+
+| Document | Description | Size |
+|----------|-------------|------|
+| [API Versioning Guide](API_VERSIONING_GUIDE.md) | **NEW**: Complete API version management with URL path, headers, deprecation, and migration | 10 KB |
+| [JWT Authentication Guide](JWT_AUTHENTICATION_GUIDE.md) | JWT token-based authentication implementation | 8 KB |
+
 ## 🎯 Quick Reference
 
 For most users, the **[README.md](../README.md)** file in the project root contains all essential information including:

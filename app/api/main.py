@@ -28,6 +28,8 @@ from app.wiki.engine import LocalWikiEngine
 from app.api.auth import get_api_key, get_optional_api_key, APIUser
 from app.api.auth_routes import router as auth_router
 from app.api.api_key_routes import router as api_key_router
+from app.api.versioning import APIVersionMiddleware
+from app.api.version_routes import router as version_router
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +100,11 @@ def create_app() -> FastAPI:
     # Add correlation ID middleware
     app.add_middleware(CorrelationIDMiddleware)
     logger.info("Correlation ID middleware registered")
-    
+
+    # ===== API Versioning Middleware =====
+    app.add_middleware(APIVersionMiddleware)
+    logger.info("API versioning middleware registered")
+
     # Register global exception handlers
     register_exception_handlers(app)
     logger.info("Global exception handlers registered")
@@ -146,7 +152,11 @@ def create_app() -> FastAPI:
     # Register API key management routes
     app.include_router(api_key_router, prefix=settings.api.api_prefix)
     logger.info("Registered API key management routes: /api-keys/")
-
+    
+    # Register API version information routes
+    app.include_router(version_router, prefix=settings.api.api_prefix)
+    logger.info("Registered API version routes: /version/")
+    
     # Initialize database tables (auto-create if not exists)
     from app.db.database import get_db_manager
     db_manager = get_db_manager()
