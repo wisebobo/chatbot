@@ -110,26 +110,33 @@ def create_app() -> FastAPI:
     logger.info("Global exception handlers registered")
 
     # ===== Rate Limiter Setup =====
-    limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+    import os
+    # Use in-memory storage for testing, Redis for production
+    storage_uri = os.getenv("RATE_LIMIT_STORAGE", "memory://")
+    
+    # Disable env file reading to avoid Unicode issues on Windows
+    limiter = Limiter(
+        key_func=get_remote_address,
+        default_limits=["200/minute"],
+        storage_uri=storage_uri,
+        enabled=True,
+        config_filename=None
+    )
+    
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    logger.info("Rate limiter initialized with default limit: 200/minute")
+    logger.info(f"Rate limiter initialized with storage: {storage_uri}, default limit: 200/minute")
 
-    # ===== Monitoring & Observability Setup (Phase 3) =====
+    # ===== Monitoring & Observability Setup =====
     try:
         from prometheus_client import make_asgi_app
         metrics_app = make_asgi_app()
         app.mount("/metrics", metrics_app)
         logger.info("Prometheus metrics endpoint mounted at /metrics")
     except ImportError:
-        logger.warning("prometheus-client not installed, metrics endpoint disabled")
-    
-    # Start system resource monitor
-    from app.monitoring.system_monitor import system_monitor
-    system_monitor.start()
-    logger.info("System resource monitor started")
+        logger.warning("prometheus_client not installed, metrics endpoint disabled")
 
-    # CORS
+    # ===== CORS Setup =====
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.api.allowed_origins,
@@ -137,246 +144,180 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    logger.info(f"CORS middleware registered with origins: {settings.api.allowed_origins}")
 
-    # register skills
-    skill_registry.register(ControlMSkill())
-    skill_registry.register(PlaywrightSkill())
-    skill_registry.register(RagSkill())
-    skill_registry.register(WikiSkill())
-    logger.info(f"Registered skills: {skill_registry.list_skill_names()}")
-
-    # Register authentication routes
-    app.include_router(auth_router, prefix=settings.api.api_prefix)
-    logger.info("Registered authentication routes: /auth/login, /auth/refresh, /auth/me")
-    
-    # Register API key management routes
-    app.include_router(api_key_router, prefix=settings.api.api_prefix)
-    logger.info("Registered API key management routes: /api-keys/")
-    
-    # Register API version information routes
-    app.include_router(version_router, prefix=settings.api.api_prefix)
-    logger.info("Registered API version routes: /version/")
-    
-    # Initialize database tables (auto-create if not exists)
-    from app.db.database import get_db_manager
-    db_manager = get_db_manager()
-    db_manager.create_tables()
-    logger.info(f"Database initialized: {db_manager._mask_url(db_manager.database_url)}")
-
-    # Initialize wiki engine for feedback API (now uses database)
-    from app.wiki.db_engine import DatabaseWikiEngine
-    wiki_engine = DatabaseWikiEngine()
-    article_count = wiki_engine.get_article_count()
-    
-    # Load sample data if empty
-    if article_count == 0:
-        logger.info("Loading sample wiki articles into database...")
-        from app.wiki.sample_data import get_sample_articles
-        sample_articles = get_sample_articles()
-        wiki_engine.import_articles(sample_articles)
-        article_count = len(sample_articles)
-        logger.info(f"Loaded {article_count} sample articles to database")
-    
-    logger.info(f"Wiki engine initialized with {article_count} articles (database-backed)")
-
-    prefix = settings.api.api_prefix
-
-    @app.get(f"{prefix}/health", response_model=HealthResponse, tags=["System"])
+    # ===== Register Routers =====
+    # Health check endpoint (with API prefix)
+    @app.get(f"{settings.api.api_prefix}/health", response_model=HealthResponse, tags=["Health"])
     async def health_check():
         """Health check endpoint"""
         return HealthResponse(
             status="healthy",
             version="1.0.0",
-            registered_skills=skill_registry.list_skill_names(),
+            registered_skills=skill_registry.list_skill_names()
         )
 
-    @app.post(f"{prefix}/chat", response_model=ChatResponse, tags=["Chat"])
-    @limiter.limit("30/minute")  # 30 requests per minute per IP
-    async def chat(req: ChatRequest, request: Request):
-        """
-        Standard chat endpoint (non-streaming)
-        
-        Rate limit: 30 requests per minute per IP address
-        """
-        from app.monitoring.metrics import llm_calls_total, llm_latency, exception_count
-        
-        session_id = req.session_id or str(uuid.uuid4())
-        request_id = str(uuid.uuid4())
+    # Auth routes
+    app.include_router(auth_router, prefix=settings.api.api_prefix)
+    logger.info("Auth routes registered")
 
-        with request_duration.labels(endpoint="/chat").time():
-            request_counter.labels(endpoint="/chat", status="started").inc()
-            try:
-                graph = get_graph()
-                initial_state = AgentState(
-                    session_id=session_id,
-                    request_id=request_id,
-                    user_id=req.user_id,
-                    user_input=req.message,
-                )
-                config = {"configurable": {"thread_id": session_id}}
-                result = await graph.ainvoke(initial_state, config=config)
+    # API Key management routes
+    app.include_router(api_key_router, prefix=settings.api.api_prefix)
+    logger.info("API key management routes registered")
 
-                request_counter.labels(endpoint="/chat", status="success").inc()
-                return ChatResponse(
-                    session_id=session_id,
-                    request_id=request_id,
-                    response=result.get("final_response", ""),
-                    status=result.get("workflow_status", WorkflowStatus.COMPLETED),
-                    skill_executed=result.get("current_skill"),
-                    error=result.get("error"),
-                )
-            except Exception as e:
-                request_counter.labels(endpoint="/chat", status="error").inc()
-                logger.error(f"Chat error: {e}", exc_info=True)
-                raise HTTPException(status_code=500, detail=str(e))
+    # Version routes
+    app.include_router(version_router, prefix=settings.api.api_prefix)
+    logger.info("API version routes registered")
 
-    @app.post(f"{prefix}/chat/stream", tags=["Chat"])
-    @limiter.limit("20/minute")  # 20 requests per minute for streaming (more resource intensive)
-    async def chat_stream(req: ChatRequest, request: Request):
-        """
-        Streaming chat endpoint (SSE)
-        
-        Rate limit: 20 requests per minute per IP address
-        """
-        session_id = req.session_id or str(uuid.uuid4())
-
-        async def event_generator() -> AsyncIterator[str]:
-            try:
-                graph = get_graph()
-                initial_state = AgentState(
-                    session_id=session_id,
-                    user_input=req.message,
-                )
-                config = {"configurable": {"thread_id": session_id}}
-                async for event in graph.astream_events(initial_state, config=config, version="v2"):
-                    if event["event"] == "on_chat_model_stream":
-                        chunk = event["data"]["chunk"].content
-                        if chunk:
-                            yield f"data: {chunk}\n\n"
-                yield "data: [DONE]\n\n"
-            except Exception as e:
-                yield f"data: [ERROR] {e}\n\n"
-
-        return StreamingResponse(
-            event_generator(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
-            },
-        )
-
-    @app.post(f"{prefix}/approval", tags=["Human Approval"])
-    @limiter.limit("20/minute")
-    async def submit_approval(
-        req: HumanApprovalRequest,
-        request: Request,
-        current_user: APIUser = Depends(get_api_key)  # Require authentication for approval
+    # Chat endpoint
+    @app.post(f"{settings.api.api_prefix}/chat", response_model=ChatResponse, tags=["Chat"])
+    async def chat_endpoint(
+        request_data: ChatRequest,
+        background_tasks: BackgroundTasks,
+        current_user: Optional[APIUser] = Depends(get_optional_api_key)
     ):
         """
-        Submit a human approval decision (human-in-the-loop)
-        
-        Authentication: Required (X-API-Key header)
-        Rate limit: 20 requests per minute
-        
-        After approval, the workflow will resume from the breakpoint
+        Main chat endpoint - processes user messages through the agent
         
         Args:
-            req: Approval request with session_id and decision
-            current_user: Authenticated user (must have valid API key)
+            request_data: Chat request containing message and optional session_id
+            background_tasks: FastAPI background tasks
+            current_user: Optional authenticated user
             
         Returns:
-            Approval result and updated workflow status
+            ChatResponse with agent's reply
         """
+        session_id = request_data.session_id or str(uuid.uuid4())
+        request_id = str(uuid.uuid4())
+        
         try:
-            logger.info(f"Approval submitted by user: {current_user.user_id} for session: {req.session_id}")
-            
+            # Get LangGraph instance
             graph = get_graph()
-            config = {"configurable": {"thread_id": req.session_id}}
-
-            # restore from checkpoint and inject approval result
-            result = await graph.ainvoke(
-                {"human_approval_result": req.approved, "pending_approval": None},
-                config=config,
-            )
-            return {
-                "session_id": req.session_id,
-                "approved": req.approved,
-                "response": result.get("final_response", ""),
-                "status": result.get("workflow_status"),
+            
+            # Prepare input state
+            initial_state = {
+                "messages": [{"role": "user", "content": request_data.message}],
+                "session_id": session_id,
+                "request_id": request_id,
+                "user_id": request_data.user_id,
+                "workflow_status": WorkflowStatus.RUNNING,
             }
+            
+            # Prepare config for checkpointer
+            config = {
+                "configurable": {
+                    "thread_id": session_id,
+                }
+            }
+            
+            # Execute graph
+            result = await graph.ainvoke(initial_state, config=config)
+            
+            # Extract response
+            messages = result.get("messages", [])
+            response_text = ""
+            skill_executed = None
+            
+            if messages:
+                last_message = messages[-1]
+                if isinstance(last_message, dict):
+                    response_text = last_message.get("content", "")
+                elif hasattr(last_message, 'content'):
+                    response_text = last_message.content
+                
+                # Check for skill execution metadata
+                skill_executed = result.get("skill_executed")
+            
+            return ChatResponse(
+                session_id=session_id,
+                request_id=request_id,
+                response=response_text,
+                status="completed",
+                skill_executed=skill_executed
+            )
+            
         except Exception as e:
-            logger.error(f"Approval error: {e}", exc_info=True)
+            logger.error(f"Chat endpoint error: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
 
-    @app.post(f"{prefix}/wiki/feedback", response_model=WikiFeedbackResponse, tags=["Wiki"])
-    @limiter.limit("10/minute")  # Stricter limit for feedback to prevent spam
-    async def submit_wiki_feedback(
-        req: WikiFeedbackRequest,
-        request: Request,
-        current_user: APIUser = Depends(get_api_key)  # Require authentication
+    # Human approval endpoint
+    @app.post(f"{settings.api.api_prefix}/human-approval", tags=["Human Approval"])
+    async def human_approval_endpoint(
+        approval_data: HumanApprovalRequest,
+        current_user: APIUser = Depends(get_api_key)
     ):
         """
-        Submit user feedback for a wiki article (requires authentication)
+        Submit human approval decision for pending actions
         
-        This implements the feedback loop for continuous knowledge improvement:
-        - Positive/negative feedback is recorded
-        - Confidence score is automatically recalculated
-        - Low-confidence articles can be flagged for re-compilation
-        
-        Rate limit: 10 requests per minute per IP
-        Authentication: Required (X-API-Key header)
-        """
-        from app.monitoring.metrics import wiki_feedback_submitted, wiki_low_confidence_alerts
-        
-        try:
-            # Get article
-            article = wiki_engine.get_article(req.entry_id)
-            if not article:
-                raise HTTPException(
-                    status_code=404, 
-                    detail=f"Wiki article not found: {req.entry_id}"
-                )
+        Args:
+            approval_data: Approval decision data
+            current_user: Authenticated user (required)
             
-            # Submit feedback to wiki engine
-            success = wiki_engine.submit_feedback(
-                entry_id=req.entry_id,
-                is_positive=req.is_positive,
-                comment=req.comment
+        Returns:
+            Success confirmation
+        """
+        try:
+            # Store approval decision in state
+            from app.state.agent_state import get_state_store
+            state_store = get_state_store()
+            
+            approval_key = f"approval:{approval_data.session_id}:{approval_data.request_id}"
+            await state_store.set(approval_key, {
+                "approved": approval_data.approved,
+                "reviewer": current_user.name,
+                "note": approval_data.reviewer_note,
+                "timestamp": str(uuid.uuid4())
+            })
+            
+            return {"status": "approved" if approval_data.approved else "rejected"}
+            
+        except Exception as e:
+            logger.error(f"Human approval error: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
+
+    # Wiki feedback endpoint
+    @app.post(f"{settings.api.api_prefix}/wiki/feedback", response_model=WikiFeedbackResponse, tags=["Wiki"])
+    async def wiki_feedback_endpoint(
+        feedback_data: WikiFeedbackRequest,
+        current_user: Optional[APIUser] = Depends(get_optional_api_key)
+    ):
+        """
+        Submit feedback for wiki articles
+        
+        Args:
+            feedback_data: Feedback data (positive/negative + optional comment)
+            current_user: Optional authenticated user
+            
+        Returns:
+            WikiFeedbackResponse with success status
+        """
+        try:
+            from app.wiki.db_engine import DatabaseWikiEngine
+            wiki_engine = DatabaseWikiEngine()
+            
+            # Add feedback to wiki entry
+            success = wiki_engine.add_feedback(
+                entry_id=feedback_data.entry_id,
+                is_positive=feedback_data.is_positive,
+                comment=feedback_data.comment,
+                user_id=current_user.name if current_user else "anonymous"
             )
             
             if not success:
-                raise HTTPException(
-                    status_code=404, 
-                    detail=f"Wiki article not found: {req.entry_id}"
-                )
+                raise HTTPException(status_code=404, detail=f"Wiki entry {feedback_data.entry_id} not found")
             
-            # Get updated article for feedback summary
-            article = wiki_engine.get_article(req.entry_id)
-            if not article:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to retrieve updated article"
-                )
+            # Get updated feedback summary
+            from app.db.repositories import WikiRepository
+            from app.db.database import get_db_manager
+            db_manager = get_db_manager()
+            wiki_repo = WikiRepository(db_manager.SessionLocal())
             
-            # Increment feedback submitted metric
-            wiki_feedback_submitted.labels(is_positive=req.is_positive).inc()
-            
-            # Check if confidence is below threshold
-            if article.confidence < 0.7:
-                wiki_low_confidence_alerts.inc()
+            feedback_summary = wiki_repo.get_feedback_summary(feedback_data.entry_id)
             
             return WikiFeedbackResponse(
                 success=True,
-                entry_id=req.entry_id,
-                feedback_summary={
-                    "positive": article.feedback.positive,
-                    "negative": article.feedback.negative,
-                    "total": article.feedback.positive + article.feedback.negative,
-                    "comments_count": len(article.feedback.comments),
-                    "updated_confidence": round(article.confidence, 3),
-                    "confidence_change": "increased" if req.is_positive else "decreased"
-                }
+                entry_id=feedback_data.entry_id,
+                feedback_summary=feedback_summary
             )
             
         except HTTPException:
@@ -385,76 +326,17 @@ def create_app() -> FastAPI:
             logger.error(f"Wiki feedback error: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
 
-    @app.get(f"{prefix}/wiki/{{entry_id}}/feedback", tags=["Wiki"])
-    @limiter.limit("60/minute")  # Higher limit for read operations
-    async def get_wiki_feedback_stats(
-        entry_id: str,
-        request: Request,
-        current_user: Optional[APIUser] = Depends(get_optional_api_key)  # Optional auth
-    ):
-        """
-        Get feedback statistics for a wiki article
-        
-        Authentication: Optional (anonymous access allowed)
-        Rate limit: 60 requests per minute per IP
-        
-        Args:
-            entry_id: Wiki article entry_id
-            current_user: Authenticated user if API key provided
-            
-        Returns:
-            Feedback statistics and confidence information
-        """
-        try:
-            user_info = f" by user: {current_user.user_id}" if current_user else " (anonymous)"
-            logger.debug(f"Feedback stats requested for {entry_id}{user_info}")
-            
-            article = wiki_engine.get_article(entry_id)
-            if not article:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Wiki article not found: {entry_id}"
-                )
-            
-            total_feedback = article.feedback.positive + article.feedback.negative
-            feedback_ratio = (
-                article.feedback.positive / total_feedback 
-                if total_feedback > 0 
-                else 0
-            )
-            
-            return {
-                "entry_id": entry_id,
-                "title": article.title,
-                "version": article.version,
-                "confidence": {
-                    "current": round(article.confidence, 3),
-                    "feedback_ratio": round(feedback_ratio, 3),
-                    "threshold_for_recompile": 0.7
-                },
-                "feedback": {
-                    "positive": article.feedback.positive,
-                    "negative": article.feedback.negative,
-                    "total": total_feedback,
-                    "comments": article.feedback.comments[-5:]  # Last 5 comments
-                },
-                "status": article.status.value if hasattr(article.status, 'value') else article.status
-            }
-            
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Failed to get wiki feedback stats: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+    # Initialize skills
+    logger.info("Initializing skills...")
+    skill_registry.register(ControlMSkill())
+    skill_registry.register(PlaywrightSkill())
+    skill_registry.register(RagSkill())
+    skill_registry.register(WikiSkill())
+    logger.info(f"Registered {len(skill_registry.list_skill_names())} skills")
 
-    @app.get(f"{prefix}/metrics", tags=["Monitoring"])
-    async def metrics():
-        """Prometheus metrics endpoint"""
-        from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-        from fastapi.responses import Response
-        return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
+    logger.info(f"FastAPI application created successfully")
     return app
 
 
+# Create global app instance
 app = create_app()

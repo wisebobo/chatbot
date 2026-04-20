@@ -4,12 +4,19 @@ Provides token generation and validation for LDAP-authenticated users
 """
 import logging
 import os
+import uuid
+import hashlib
+import binascii
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import jwt
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+# Password hashing configuration
+SALT_LENGTH = 32
+ITERATIONS = 100000 # Number of iterations for PBKDF2
 
 # JWT Configuration
 JWT_SECRET = os.getenv("JWT_SECRET", "change-this-to-a-strong-random-secret-key-in-production")
@@ -35,6 +42,58 @@ class TokenData(BaseModel):
     role: str
     dn: Optional[str] = ""
     exp: Optional[datetime] = None
+
+
+class UserInDB(BaseModel):
+    """User model for database storage"""
+    user_id: str
+    username: str
+    email: str
+    hashed_password: str
+    role: str = "user"
+    is_active: bool = True
+    created_at: datetime = None
+    updated_at: datetime = None
+    
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.created_at is None:
+            self.created_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(timezone.utc)
+
+
+class UserCreate(BaseModel):
+    """User creation request model"""
+    username: str
+    email: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    """User response model (excludes sensitive data)"""
+    user_id: str
+    username: str
+    email: str
+    role: str
+    is_active: bool
+    created_at: str
+
+
+def hash_password(password: str) -> str:
+    """Hash a password using SHA-256 with salt"""
+    import secrets
+    salt = secrets.token_hex(16)
+    hashed = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
+    return f"{salt}${hashed}"
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash"""
+    try:
+        salt, hashed = hashed_password.split('$')
+        return hashlib.sha256((plain_password + salt).encode('utf-8')).hexdigest() == hashed
+    except (ValueError, AttributeError):
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

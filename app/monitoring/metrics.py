@@ -169,3 +169,77 @@ try:
         "process_cpu_percent",
         "Process CPU usage percentage"
     )
+
+except ImportError:
+    # Prometheus not installed, create dummy metrics
+    class DummyMetric:
+        def __init__(self, *args, **kwargs):
+            pass
+        def inc(self, *args, **kwargs):
+            pass
+        def set(self, *args, **kwargs):
+            pass
+        def observe(self, *args, **kwargs):
+            pass
+    
+    request_counter = DummyMetric()
+    request_duration = DummyMetric()
+    auth_failures = DummyMetric()
+    rate_limit_exceeded = DummyMetric()
+    active_api_keys = DummyMetric()
+    api_key_requests = DummyMetric()
+    audit_logs_created = DummyMetric()
+    skill_execution_counter = DummyMetric()
+    skill_execution_duration = DummyMetric()
+    active_sessions = DummyMetric()
+    session_duration = DummyMetric()
+    llm_latency = DummyMetric()
+    llm_calls_total = DummyMetric()
+    llm_token_usage = DummyMetric()
+    llm_errors = DummyMetric()
+    wiki_articles_total = DummyMetric()
+    wiki_feedback_submitted = DummyMetric()
+    wiki_low_confidence_alerts = DummyMetric()
+    wiki_compilation_duration = DummyMetric()
+    api_error_rate = DummyMetric()
+    exception_count = DummyMetric()
+    user_logins = DummyMetric()
+    jwt_tokens_issued = DummyMetric()
+    ldap_auth_duration = DummyMetric()
+    memory_usage_bytes = DummyMetric()
+    cpu_usage_percent = DummyMetric()
+
+
+def get_metrics():
+    """Get all metrics as a dictionary"""
+    import sys
+    if 'prometheus_client' in sys.modules:
+        return {
+            'request_counter': request_counter,
+            'request_duration': request_duration,
+            'auth_failures': auth_failures,
+            'rate_limit_exceeded': rate_limit_exceeded,
+            'active_api_keys': active_api_keys,
+            'api_key_requests': api_key_requests,
+            'audit_logs_created': audit_logs_created,
+            'skill_execution_counter': skill_execution_counter,
+            'skill_execution_duration': skill_execution_duration,
+            'active_sessions': active_sessions,
+            'session_duration': session_duration,
+            'llm_latency': llm_latency,
+            'llm_calls_total': llm_calls_total,
+            'llm_token_usage': llm_token_usage,
+            'llm_errors': llm_errors,
+            'wiki_articles_total': wiki_articles_total,
+            'wiki_feedback_submitted': wiki_feedback_submitted,
+            'wiki_low_confidence_alerts': wiki_low_confidence_alerts,
+            'wiki_compilation_duration': wiki_compilation_duration,
+            'api_error_rate': api_error_rate,
+            'exception_count': exception_count,
+            'user_logins': user_logins,
+            'jwt_tokens_issued': jwt_tokens_issued,
+            'ldap_auth_duration': ldap_auth_duration,
+            'memory_usage_bytes': memory_usage_bytes,
+            'cpu_usage_percent': cpu_usage_percent,
+        }
+    return {}

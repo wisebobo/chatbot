@@ -103,7 +103,7 @@ async def test_intent_recognition_llm_error(sample_state):
 @pytest.mark.asyncio
 async def test_skill_execution_not_found(sample_state):
     """Test skill execution with invalid skill name"""
-    state = sample_state.copy(update={"routing_decision": "nonexistent_skill"})
+    state = sample_state.model_copy(update={"routing_decision": "nonexistent_skill"})
     
     result = await skill_execution_node(state)
     
@@ -173,7 +173,7 @@ async def test_skill_execution_failure(sample_state):
     )
     mock_skill.safe_execute = AsyncMock(return_value=mock_output)
     
-    state = sample_state.copy(update={
+    state = sample_state.model_copy(update={
         "routing_decision": "wiki_search",
         "context": {"intent_params": {}}
     })
@@ -196,7 +196,7 @@ async def test_skill_execution_human_approval_required(sample_state):
     mock_skill.description = "Trigger Control-M job"
     mock_skill.require_human_approval = True
     
-    state = sample_state.copy(update={
+    state = sample_state.model_copy(update={
         "routing_decision": "controlm_trigger",
         "pending_approval": None
     })

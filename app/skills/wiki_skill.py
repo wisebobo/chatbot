@@ -174,26 +174,43 @@ class WikiSkill(BaseSkill):
             query=search_params.query,
             exact_match=search_params.exact_match,
             category=search_params.category,
-            max_results=10
+            limit=10
         )
         
         # Format results
         formatted_results = []
         for article in results:
-            content = article.get('content', '')
+            # Handle both WikiArticle objects and dicts
+            if isinstance(article, dict):
+                content = article.get('content', '')
+                title = article.get('title', '')
+                entry_id = article.get('entry_id') or article.get('url')
+                category = article.get('category') or article.get('type')
+                updated_at = article.get('updated_at') or article.get('update_time')
+                relevance_score = article.get('relevance_score', 0)
+                metadata = article.get('metadata')
+            else:
+                # WikiArticle object - use correct field names
+                content = article.content or ''
+                title = article.title or ''
+                entry_id = article.entry_id  # WikiArticle uses entry_id, not url
+                category = article.type.value if hasattr(article.type, 'value') else str(article.type)
+                updated_at = article.update_time
+                relevance_score = article.confidence  # Use confidence as relevance score
+                metadata = article.metadata
             
             # Truncate content if max_length specified
             if search_params.max_length and len(content) > search_params.max_length:
                 content = content[:search_params.max_length] + "\n\n[Content truncated...]"
             
             formatted_results.append({
-                "title": article.get('title', ''),
-                "url": article.get('url'),
+                "title": title,
+                "entry_id": entry_id,  # Use entry_id instead of url
                 "content": content,
-                "category": article.get('category'),
-                "last_updated": article.get('updated_at'),
-                "relevance_score": article.get('relevance_score', 0),
-                "metadata": article.get('metadata'),
+                "category": category,
+                "last_updated": updated_at,
+                "relevance_score": relevance_score,
+                "metadata": metadata,
             })
         
         return SkillOutput(

@@ -157,6 +157,11 @@ class SkillRegistry:
     def list_skill_names(self) -> list:
         return list(self._skills.keys())
 
+    def clear(self) -> None:
+        """Clear all registered skills (useful for testing)"""
+        self._skills.clear()
+        logger.info("Skill registry cleared")
+
 
 # global registry
 skill_registry = SkillRegistry()

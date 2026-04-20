@@ -7,6 +7,15 @@ An enterprise-level Agent platform based on LangGraph, supporting stateful workf
 - [Quick Start](#-quick-start)
 - [Project Structure](#-project-structure)
 - [Architecture Overview](#-architecture-overview)
+- [Infrastructure Architecture](#️-infrastructure-architecture)
+  - [System Architecture Diagram](#system-architecture-diagram)
+  - [Deployment Architecture](#deployment-architecture)
+  - [Component Details](#component-details)
+  - [Network Architecture](#network-architecture)
+  - [Security Architecture](#security-architecture)
+  - [Scalability & Performance](#scalability--performance)
+  - [Disaster Recovery](#disaster-recovery)
+  - [Environment Parity](#environment-parity)
 - [Core Features](#-core-features)
   - [Authentication & Security](#authentication--security)
   - [API Version Management](#api-version-management)
@@ -190,6 +199,462 @@ graph TD
 
 ---
 
+## 🏛️ Infrastructure Architecture
+
+### System Architecture Diagram
+
+```
+graph TB
+    subgraph "Client Layer"
+        CLI[CLI Interface]
+        WebApp[Web Application]
+        API_Client[External API Clients]
+    end
+    
+    subgraph "API Gateway & Load Balancer"
+        Ingress[Kubernetes Ingress / Nginx]
+        TLS[TLS Termination]
+    end
+    
+    subgraph "Application Layer - Kubernetes Cluster"
+        subgraph "FastAPI Pods (3-10 replicas)"
+            Pod1[Pod 1<br/>FastAPI + LangGraph]
+            Pod2[Pod 2<br/>FastAPI + LangGraph]
+            Pod3[Pod 3<br/>FastAPI + LangGraph]
+        end
+        
+        subgraph "Core Components"
+            Auth[Authentication Module<br/>JWT + LDAP + API Keys]
+            RateLimit[Rate Limiter<br/>Slowapi]
+            Versioning[API Version Manager]
+            Exception[Exception Handler<br/>Circuit Breaker]
+        end
+        
+        subgraph "Agent Engine"
+            Intent[Intent Recognition<br/>LLM + Cache]
+            Router[Conditional Router]
+            Skills[Skill Registry<br/>Control-M, Playwright, RAG, Wiki]
+            Response[Response Generator<br/>LLM]
+        end
+    end
+    
+    subgraph "Data Layer"
+        PostgreSQL[(PostgreSQL<br/>Production DB)]
+        SQLite[(SQLite<br/>Dev/Test DB)]
+        Redis[(Redis<br/>Cache & Sessions)]
+        WikiFS[Wiki File Storage<br/>PVC/Persistent Volume]
+    end
+    
+    subgraph "External Services"
+        ControlMAPI[Control-M APIs<br/>Multi-Region]
+        CompanyAI[Company AI Platform<br/>LLM + RAG + Wiki]
+        LDAP_Server[LDAP/Active Directory]
+        Prometheus[Prometheus<br/>Metrics Collection]
+    end
+    
+    subgraph "Monitoring & Observability"
+        Grafana[Grafana Dashboard<br/>14 Panels]
+        Alerts[AlertManager<br/>16 Alert Rules]
+        Logs[Structured Logging<br/>JSON Format]
+    end
+    
+    CLI --> Ingress
+    WebApp --> Ingress
+    API_Client --> Ingress
+    
+    Ingress --> TLS
+    TLS --> Pod1
+    TLS --> Pod2
+    TLS --> Pod3
+    
+    Pod1 --> Auth
+    Pod2 --> Auth
+    Pod3 --> Auth
+    
+    Auth --> RateLimit
+    RateLimit --> Versioning
+    Versioning --> Exception
+    
+    Exception --> Intent
+    Intent --> Router
+    Router --> Skills
+    Skills --> Response
+    
+    Auth --> LDAP_Server
+    Skills --> ControlMAPI
+    Skills --> CompanyAI
+    Intent --> CompanyAI
+    Response --> CompanyAI
+    
+    Pod1 --> PostgreSQL
+    Pod2 --> PostgreSQL
+    Pod3 --> PostgreSQL
+    
+    Pod1 --> Redis
+    Pod2 --> Redis
+    Pod3 --> Redis
+    
+    Pod1 --> WikiFS
+    Pod2 --> WikiFS
+    Pod3 --> WikiFS
+    
+    Pod1 --> Prometheus
+    Pod2 --> Prometheus
+    Pod3 --> Prometheus
+    
+    Prometheus --> Grafana
+    Prometheus --> Alerts
+    Pod1 --> Logs
+    Pod2 --> Logs
+    Pod3 --> Logs
+    
+    style Ingress fill:#e1f5ff
+    style Pod1 fill:#d4edda
+    style Pod2 fill:#d4edda
+    style Pod3 fill:#d4edda
+    style PostgreSQL fill:#fff3cd
+    style Redis fill:#fff3cd
+    style ControlMAPI fill:#f8d7da
+    style CompanyAI fill:#f8d7da
+    style Grafana fill:#d1ecf1
+```
+
+### Deployment Architecture
+
+#### Development Environment
+
+```
+┌─────────────────────────────────────┐
+│         Developer Workstation       │
+├─────────────────────────────────────┤
+│  ┌──────────┐  ┌─────────────────┐  │
+│  │ FastAPI  │  │   SQLite DB     │  │
+│  │ Server   │──│   (Single File) │  │
+│  └──────────┘  └─────────────────┘  │
+│       │                              │
+│       ├─→ Local LLM API             │
+│       ├─→ Local Control-M           │
+│       └─→ File-based Wiki           │
+└─────────────────────────────────────┘
+```
+
+**Characteristics:**
+- Zero external dependencies
+- Single process execution
+- Hot reload support
+- Instant startup (< 2 seconds)
+
+#### Production Environment (Kubernetes)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                  Kubernetes Cluster                       │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │              Ingress Controller                  │    │
+│  │         (TLS Termination + Routing)              │    │
+│  └──────────────────┬──────────────────────────────┘    │
+│                     │                                    │
+│  ┌──────────────────▼──────────────────────────────┐    │
+│  │          FastAPI Deployment                      │    │
+│  │  ┌────────┐ ┌────────┐ ┌────────┐               │    │
+│  │  │ Pod 1  │ │ Pod 2  │ │ Pod 3  │ ... Pod N     │    │
+│  │  └───┬────┘ └───┬────┘ └───┬────┘               │    │
+│  │      │          │          │                     │    │
+│  │  ┌───▼──────────▼──────────▼────┐                │    │
+│  │  │   Horizontal Pod Autoscaler  │                │    │
+│  │  │   (CPU: 70%, Memory: 80%)    │                │    │
+│  │  └──────────────────────────────┘                │    │
+│  └──────────────────────────────────────────────────┘    │
+│                     │                                    │
+│  ┌──────────────────▼──────────────────────────────┐    │
+│  │              Services                            │    │
+│  │  ┌──────────────┐  ┌──────────────────┐         │    │
+│  │  │ ClusterIP    │  │ NetworkPolicy    │         │    │
+│  │  │ (Internal LB)│  │ (Security Rules) │         │    │
+│  │  └──────────────┘  └──────────────────┘         │    │
+│  └──────────────────────────────────────────────────┘    │
+│                     │                                    │
+│  ┌──────────────────▼──────────────────────────────┐    │
+│  │           Persistent Storage                     │    │
+│  │  ┌──────────────┐  ┌──────────────────┐         │    │
+│  │  │ PostgreSQL   │  │ Wiki PVC         │         │    │
+│  │  │ (StatefulSet)│  │ (ReadWriteMany)  │         │    │
+│  │  └──────────────┘  └──────────────────┘         │    │
+│  └──────────────────────────────────────────────────┘    │
+│                                                          │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │           Monitoring Stack                       │    │
+│  │  ┌──────────┐ ┌──────────┐ ┌────────────────┐  │    │
+│  │  │Prometheus│ │ Grafana  │ │ AlertManager   │  │    │
+│  │  │(Metrics) │ │(Dashboard│ │ (Notifications)│  │    │
+│  │  └──────────┘ └──────────┘ └────────────────┘  │    │
+│  └─────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Component Details
+
+#### 1. Application Layer
+
+**FastAPI Application:**
+- **Framework**: FastAPI 0.109+ with async support
+- **Workers**: Uvicorn workers (configurable via `--workers`)
+- **Health Checks**: Liveness and Readiness probes
+- **Graceful Shutdown**: Proper connection draining
+
+**LangGraph Agent Engine:**
+- **State Management**: Checkpointer for workflow persistence
+- **Workflow Nodes**: Intent recognition → Skill execution → Response generation
+- **Human-in-the-Loop**: Approval gates for risky operations
+- **Caching**: Intent caching to reduce LLM calls
+
+**Authentication & Security:**
+- **Multi-layer Auth**: API Keys, JWT tokens, LDAP integration
+- **Rate Limiting**: Per-client rate limits (slowapi)
+- **API Versioning**: Multi-version support with deprecation handling
+- **CORS**: Configurable cross-origin policies
+
+#### 2. Data Layer
+
+**Database Strategy (Dual Database):**
+
+| Environment | Database | Use Case | Characteristics |
+|-------------|----------|----------|-----------------|
+| **Development** | SQLite | Local testing, CI/CD | Zero config, single file, portable |
+| **Production** | PostgreSQL | High availability, ACID | Connection pooling, replication, backups |
+
+**Storage Components:**
+
+| Component | Type | Purpose | Persistence |
+|-----------|------|---------|-------------|
+| **User Sessions** | Redis | JWT refresh tokens, rate limit counters | Volatile (TTL-based) |
+| **Wiki Articles** | File System (PVC) | Structured knowledge base JSON files | Persistent (ReadWriteMany) |
+| **Audit Logs** | PostgreSQL | Authentication events, approval history | Permanent |
+| **Metrics** | Prometheus TSDB | Performance metrics, custom business metrics | Time-series (retention configurable) |
+
+#### 3. External Integrations
+
+**Multi-Region Control-M:**
+- **Architecture**: Region-aware routing with intelligent detection
+- **Detection Strategies**: Explicit parameter → LLM analysis → Naming conventions → Default fallback
+- **Token Management**: Per-region token caching with automatic refresh
+- **Supported Regions**: Configurable via environment variables (us-east, eu-west, ap-southeast, etc.)
+
+**Company AI Platform:**
+- **LLM Service**: Intent recognition, response generation, wiki compilation
+- **RAG API**: Knowledge base search with relevance scoring
+- **Wiki API**: Remote wiki query (fallback to local engine)
+- **Connection Pooling**: HTTPX async clients with retry logic
+
+**LDAP/Active Directory:**
+- **Authentication Methods**: Simple bind, NTLM
+- **Role Mapping**: AD group membership → Application roles
+- **SSL/TLS**: Encrypted LDAP connections (LDAPS)
+
+#### 4. Monitoring & Observability
+
+**Metrics Collection (40+ Metrics):**
+
+| Category | Metrics | Examples |
+|----------|---------|----------|
+| **Request Metrics** | Rate, latency, errors | `http_requests_total`, `http_request_duration_seconds` |
+| **Business Metrics** | Skill usage, intent distribution | `skill_executions_total`, `intent_classification_counts` |
+| **System Metrics** | CPU, memory, threads | `process_cpu_seconds_total`, `process_resident_memory_bytes` |
+| **Agent Metrics** | Workflow duration, approval rates | `agent_workflow_duration_seconds`, `human_approval_rate` |
+| **External API** | LLM latency, error rates | `llm_api_calls_total`, `llm_api_latency_seconds` |
+
+**Alerting Rules (16 Alerts):**
+
+| Severity | Alert Name | Condition | Action |
+|----------|-----------|-----------|--------|
+| 🔴 Critical | HighErrorRate | Error rate > 5% for 5min | Page on-call engineer |
+| 🔴 Critical | ServiceDown | All pods unhealthy | Immediate investigation |
+| 🟡 Warning | HighLatency | P95 latency > 2s for 10min | Review performance |
+| 🟡 Warning | LowConfidenceWiki | Wiki confidence < 0.6 | Trigger recompilation |
+| 🟢 Info | HighSkillUsage | Skill called > 1000 times/hour | Capacity planning |
+
+**Grafana Dashboard (14 Panels):**
+- Request rate and latency trends
+- Error rate breakdown by endpoint
+- Skill execution statistics
+- LLM API performance
+- System resource utilization
+- Human approval metrics
+- Wiki confidence distribution
+
+### Network Architecture
+
+```
+Internet
+    │
+    ▼
+┌─────────────────┐
+│  Load Balancer  │  ← TLS Termination (HTTPS)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   Ingress       │  ← Path-based routing
+│   Controller    │     Rate limiting
+└────────┬────────┘
+         │
+         ├──→ /api/v1/*  → FastAPI Service (ClusterIP)
+         ├──→ /metrics   → Prometheus Service
+         └──→ /grafana   → Grafana Service
+         
+Internal Cluster Network:
+    FastAPI Pods ←→ PostgreSQL (via Service)
+    FastAPI Pods ←→ Redis (via Service)
+    FastAPI Pods ←→ Wiki PVC (via Mount)
+    
+External Connections:
+    FastAPI Pods → Control-M APIs (HTTPS, multi-region)
+    FastAPI Pods → Company AI Platform (HTTPS)
+    FastAPI Pods → LDAP Server (LDAPS)
+```
+
+### Security Architecture
+
+#### Defense in Depth
+
+```
+Layer 1: Network Security
+├── Kubernetes NetworkPolicy (pod-to-pod restrictions)
+├── Ingress TLS termination
+└── Firewall rules (cloud provider)
+
+Layer 2: Authentication
+├── API Key validation
+├── JWT token verification
+├── LDAP/AD authentication
+└── Role-based access control (RBAC)
+
+Layer 3: Authorization
+├── Endpoint-level permissions
+├── Resource-level permissions
+└── Human approval for sensitive operations
+
+Layer 4: Data Protection
+├── Secrets management (Kubernetes Secrets)
+├── Encrypted database connections (SSL)
+├── Encrypted LDAP connections (LDAPS)
+└── No sensitive data in logs
+
+Layer 5: Application Security
+├── Input validation (Pydantic models)
+├── Rate limiting (slowapi)
+├── Circuit breakers (external API calls)
+└── Exception sanitization (no stack traces in responses)
+```
+
+#### Secret Management
+
+**Development:**
+- `.env` file (gitignored)
+- Environment variables
+
+**Production (Kubernetes):**
+```yaml
+# Kubernetes Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: chatbot-secrets
+type: Opaque
+data:
+  llm-api-key: <base64-encoded>
+  jwt-secret: <base64-encoded>
+  ldap-password: <base64-encoded>
+  db-password: <base64-encoded>
+```
+
+**Best Practices:**
+- ✅ Never commit secrets to version control
+- ✅ Rotate credentials regularly
+- ✅ Use separate credentials per environment
+- ✅ Audit secret access (Kubernetes RBAC)
+
+### Scalability & Performance
+
+#### Horizontal Scaling
+
+**Auto-scaling Configuration:**
+```yaml
+# HPA Configuration
+minReplicas: 3
+maxReplicas: 10
+targetCPUUtilization: 70%
+targetMemoryUtilization: 80%
+scaleUpStabilization: 60s
+scaleDownStabilization: 300s
+```
+
+**Scaling Triggers:**
+- CPU usage > 70% → Scale up
+- Memory usage > 80% → Scale up
+- Request queue depth → Custom metric (future)
+
+#### Performance Optimization
+
+**Caching Layers:**
+
+| Cache Type | Technology | TTL | Hit Rate Target |
+|------------|-----------|-----|-----------------|
+| **Intent Cache** | In-memory (dict) | 1 hour | > 60% |
+| **Auth Tokens** | Redis | 30 min | > 80% |
+| **Rate Limits** | Redis | Sliding window | N/A |
+| **LLM Responses** | Future: Redis | Configurable | > 40% |
+
+**Database Optimization:**
+- Connection pooling (SQLAlchemy QueuePool)
+- Read replicas for read-heavy workloads (future)
+- Index optimization for frequent queries
+- Query result caching (Redis)
+
+**Async Architecture:**
+- All I/O operations are async (HTTPX, databases)
+- Non-blocking skill execution
+- Concurrent external API calls where possible
+
+### Disaster Recovery
+
+#### Backup Strategy
+
+| Component | Backup Method | Frequency | Retention |
+|-----------|--------------|-----------|-----------|
+| **PostgreSQL** | pg_dump + WAL archiving | Daily full, continuous WAL | 30 days |
+| **Wiki Files** | PVC snapshot | Daily | 14 days |
+| **Configuration** | Git repository | Every change | Permanent |
+| **Secrets** | External vault backup | Weekly | 90 days |
+
+#### Recovery Procedures
+
+**RTO (Recovery Time Objective):** < 15 minutes  
+**RPO (Recovery Point Objective):** < 1 hour
+
+**Recovery Steps:**
+1. Detect failure (health check / monitoring alert)
+2. Auto-failover to healthy pods (Kubernetes)
+3. Restore database from latest backup if needed
+4. Verify service health
+5. Notify stakeholders
+
+### Environment Parity
+
+| Aspect | Development | Staging | Production |
+|--------|-------------|---------|------------|
+| **Database** | SQLite | PostgreSQL (single) | PostgreSQL (HA) |
+| **Replicas** | 1 | 2 | 3-10 (auto-scale) |
+| **Monitoring** | Basic logging | Prometheus + Grafana | Full stack + alerts |
+| **SSL/TLS** | Optional | Required | Required (strict) |
+| **Rate Limiting** | Disabled | Enabled (relaxed) | Enabled (strict) |
+| **LDAP** | Mock/Skip | Test AD | Production AD |
+| **Backups** | None | Daily | Continuous + daily |
+
+---
+
 ## ✨ Core Features
 
 ### Authentication & Security
@@ -352,7 +817,7 @@ The platform uses a plugin-based skill architecture. Each skill is a self-contai
 
 #### Skill Execution Flow
 
-```mermaid
+``mermaid
 graph LR
     A[User Request] --> B{Intent Recognition}
     B -->|Skill Match| C[Execute Skill]
@@ -1158,9 +1623,11 @@ playwright install chromium
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
 **Recent Highlights:**
+- ✅ **Infrastructure Architecture Documentation**: Comprehensive system architecture diagrams, deployment strategies, security model, and scalability guidelines (2026-04-19)
+- ✅ **Multi-Region Control-M Support**: Intelligent region detection with LLM-based routing across multiple Control-M API endpoints (2026-04-19)
 - ✅ **API Version Management**: Comprehensive versioning with URL path, headers, deprecation warnings, and migration guides (2026-04-19)
 - ✅ **Enhanced Test Coverage**: 169 tests with 93% pass rate, 85%+ coverage on core modules (2026-04-19)
-- ✅ **Enterprise Exception Handling**: Custom exception hierarchy, exponential backoff retry, circuit breaker pattern (2026-04-19)
+- ✅ Enterprise Exception Handling**: Custom exception hierarchy, exponential backoff retry, circuit breaker pattern (2026-04-19)
 - ✅ LDAP Integration**: Active Directory authentication via LDAP (replaced user registration)
 - ✅ Phase 3: Monitoring & Observability (40+ metrics, 16 alerts, Grafana dashboard)
 - ✅ Phase 2: JWT Authentication (token management, role-based access)
@@ -1214,5 +1681,5 @@ Developed by the Enterprise AI Platform Team
 ---
 
 **Last Updated:** 2026-04-19  
-**Version:** 3.1.0  
-**Status:** ✅ Production Ready with Enterprise Features
+**Version:** 3.2.0  
+**Status:** ✅ Production Ready with Enterprise Features & Complete Infrastructure Documentation

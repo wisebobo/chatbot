@@ -41,6 +41,13 @@ This directory contains detailed technical guides for the LangGraph Enterprise A
 | [Wiki Feedback API Guide](WIKI_FEEDBACK_API_GUIDE.md) | User feedback system for wiki articles with confidence scoring | 14 KB |
 | [Wiki Integration Guide](WIKI_INTEGRATION_GUIDE.md) | Complete wiki integration guide with examples | 10 KB |
 
+### Skills & Automation
+
+| Document | Description | Size |
+|----------|-------------|------|
+| [Multi-Region Control-M Guide](MULTIREGION_CONTROLM_GUIDE.md) | **NEW**: Intelligent region detection for multiple Control-M API endpoints with LLM-based routing | 12 KB |
+| [Skills System Guide](SKILLS_SYSTEM_GUIDE.md) | Plugin-based skill architecture overview | 8 KB |
+
 ### API & Integration
 
 | Document | Description | Size |

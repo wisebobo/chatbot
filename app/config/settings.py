@@ -3,7 +3,7 @@ Global configuration management module
 Uses Pydantic BaseSettings to read settings from environment variables or a .env file
 """
 from functools import lru_cache
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -54,17 +54,71 @@ class APISettings(BaseSettings):
         extra = "ignore"
 
 
+class ControlMRegionSettings(BaseSettings):
+    """Single Control-M region configuration"""
+    name: str = Field(..., description="Region name (e.g., 'us-east', 'eu-west', 'ap-southeast')")
+    base_url: str = Field(..., description="Control-M API base URL for this region")
+    username: str = Field(..., description="Control-M username for this region")
+    password: str = Field(..., description="Control-M password for this region")
+    verify_ssl: bool = Field(default=True, description="Verify SSL certificate")
+    request_timeout: int = Field(default=30, description="Request timeout in seconds")
+    description: str = Field(default="", description="Human-readable description of this region")
+    
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
+
+
 class ControlMSettings(BaseSettings):
-    """Control-M skill settings"""
+    """Control-M skill settings with multi-region support"""
+    
+    # Legacy single-region settings (for backward compatibility)
     base_url: str = Field(default="http://controlm-server/api", alias="CONTROLM_BASE_URL")
     username: str = Field(default="ctm_user", alias="CONTROLM_USERNAME")
     password: str = Field(default="", alias="CONTROLM_PASSWORD")
     verify_ssl: bool = Field(default=True, alias="CONTROLM_VERIFY_SSL")
     request_timeout: int = Field(default=30, alias="CONTROLM_TIMEOUT")
-
+    
+    # Multi-region configuration
+    regions: Dict[str, ControlMRegionSettings] = Field(
+        default_factory=dict,
+        description="Multiple Control-M regions configuration"
+    )
+    default_region: str = Field(
+        default="",
+        alias="CONTROLM_DEFAULT_REGION",
+        description="Default region to use when not specified"
+    )
+    enable_region_detection: bool = Field(
+        default=True,
+        alias="CONTROLM_ENABLE_REGION_DETECTION",
+        description="Enable LLM-based region detection"
+    )
+    
     class Config:
         env_file = ".env"
         extra = "ignore"
+    
+    def get_region(self, region_name: str) -> Optional[ControlMRegionSettings]:
+        """Get region configuration by name"""
+        if not region_name:
+            return None
+        return self.regions.get(region_name.lower())
+    
+    def get_default_region(self) -> Optional[ControlMRegionSettings]:
+        """Get default region configuration"""
+        if self.default_region and self.default_region in self.regions:
+            return self.regions[self.default_region.lower()]
+        
+        # If no default configured but regions exist, return first one
+        if self.regions:
+            return next(iter(self.regions.values()))
+        
+        return None
+    
+    def has_multiple_regions(self) -> bool:
+        """Check if multiple regions are configured"""
+        return len(self.regions) > 1
 
 
 class RagSettings(BaseSettings):
@@ -104,11 +158,23 @@ class WikiSettings(BaseSettings):
 class MonitoringSettings(BaseSettings):
     """Monitoring and logging settings"""
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
-    log_format: str = Field(default="json", alias="LOG_FORMAT")  # json | text
+    log_format: str = Field(default="json", alias="LOG_FORMAT")
     enable_prometheus: bool = Field(default=True, alias="ENABLE_PROMETHEUS")
-    prometheus_port: int = Field(default=9090, alias="PROMETHEUS_PORT")
-    trace_enabled: bool = Field(default=False, alias="TRACE_ENABLED")
-    sentry_dsn: Optional[str] = Field(default=None, alias="SENTRY_DSN")
+
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
+
+
+class LDAPSettings(BaseSettings):
+    """LDAP authentication settings"""
+    enabled: bool = Field(default=False, alias="LDAP_ENABLED")
+    server_url: str = Field(default="ldap://localhost:389", alias="LDAP_SERVER_URL")
+    base_dn: str = Field(default="dc=company,dc=com", alias="LDAP_BASE_DN")
+    bind_dn: str = Field(default="", alias="LDAP_BIND_DN")
+    bind_password: str = Field(default="", alias="LDAP_BIND_PASSWORD")
+    user_filter: str = Field(default="(uid={username})", alias="LDAP_USER_FILTER")
+    use_ssl: bool = Field(default=False, alias="LDAP_USE_SSL")
 
     class Config:
         env_file = ".env"
@@ -128,6 +194,7 @@ class Settings(BaseSettings):
     rag: RagSettings = RagSettings()
     wiki: WikiSettings = WikiSettings()
     monitoring: MonitoringSettings = MonitoringSettings()
+    ldap: LDAPSettings = LDAPSettings()
 
     class Config:
         env_file = ".env"

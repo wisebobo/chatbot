@@ -260,15 +260,21 @@ class DatabaseWikiEngine:
             repo = WikiRepository(session)
             return repo.count(status_filter="active")
 
-    def import_articles(self, articles: List[WikiArticle]) -> int:
-        """Import multiple articles"""
+    def import_articles(self, articles: List) -> int:
+        """Import multiple articles (accepts WikiArticle objects or dicts)"""
         count = 0
         for article in articles:
             try:
+                # Convert dict to WikiArticle if needed
+                if isinstance(article, dict):
+                    from app.wiki.engine import WikiArticle
+                    article = WikiArticle(**article)
+                
                 self.save_article(article)
                 count += 1
             except Exception as e:
-                logger.error(f"Failed to import article {article.entry_id}: {e}")
+                entry_id = article.entry_id if hasattr(article, 'entry_id') else article.get('entry_id', 'unknown')
+                logger.error(f"Failed to import article {entry_id}: {e}")
         
         logger.info(f"Imported {count}/{len(articles)} articles")
         return count

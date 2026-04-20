@@ -230,4 +230,5 @@ def reset_db_manager():
 def get_db():
     """FastAPI dependency to get database session."""
     db_manager = get_db_manager()
-    yield from db_manager.get_session_dependency()
+    # Call the returned generator function
+    yield from db_manager.get_session_dependency()()
