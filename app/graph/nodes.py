@@ -132,6 +132,7 @@ async def intent_recognition_node(state: AgentState) -> Dict[str, Any]:
         recovery_timeout=60.0
     )
     
+    @llm_breaker
     @exponential_backoff(
         max_retries=3,
         base_delay=1.0,
@@ -150,8 +151,8 @@ async def intent_recognition_node(state: AgentState) -> Dict[str, Any]:
             ) from e
     
     try:
-        # Execute with circuit breaker and retry
-        response = await llm_breaker(call_llm_with_retry)
+        # Execute with circuit breaker and retry (decorators handle the wrapping)
+        response = await call_llm_with_retry()
         
         content = response.content.strip()
         # Remove possible markdown code block

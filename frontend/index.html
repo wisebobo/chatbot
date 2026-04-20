@@ -1,0 +1,384 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Chatbot - Test Platform</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .app-container { display: flex; height: 100vh; }
+        
+        /* Sidebar Navigation */
+        .sidebar { width: 220px; background: #2c3e50; color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; background: #34495e; text-align: center; }
+        .sidebar-header h1 { font-size: 20px; margin-bottom: 5px; }
+        .sidebar-header p { font-size: 12px; opacity: 0.8; }
+        .nav-menu { flex: 1; padding: 20px 0; }
+        .nav-item { padding: 15px 20px; cursor: pointer; transition: background 0.3s; display: flex; align-items: center; gap: 10px; }
+        .nav-item:hover { background: #34495e; }
+        .nav-item.active { background: #667eea; }
+        .nav-icon { font-size: 18px; }
+        .user-section { padding: 15px 20px; border-top: 1px solid #34495e; }
+        .user-info { font-size: 13px; margin-bottom: 10px; }
+        .logout-btn { width: 100%; padding: 8px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .logout-btn:hover { background: #c0392b; }
+        
+        /* Main Content */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .page { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+        .page.active { display: flex; }
+        
+        /* Login Page */
+        .login-page { justify-content: center; align-items: center; padding: 40px; }
+        .login-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 450px; }
+        .login-card h2 { color: #2c3e50; margin-bottom: 10px; text-align: center; }
+        .login-card p { color: #7f8c8d; margin-bottom: 30px; text-align: center; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #34495e; font-weight: 500; font-size: 14px; }
+        .form-group input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .error-msg { color: #e74c3c; margin-top: 15px; padding: 10px; background: #fdf0ef; border-radius: 6px; display: none; font-size: 13px; }
+        .test-credentials { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 12px; }
+        .test-credentials h4 { color: #2c3e50; margin-bottom: 8px; }
+        .test-credentials code { background: #e9ecef; padding: 2px 6px; border-radius: 3px; }
+        
+        /* Chat Page */
+        .chat-header { padding: 20px; background: white; border-bottom: 1px solid #e0e0e0; }
+        .chat-header h2 { color: #2c3e50; font-size: 20px; }
+        .messages-container { flex: 1; overflow-y: auto; padding: 20px; background: #f8f9fa; }
+        .message { margin-bottom: 20px; display: flex; animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { justify-content: flex-end; }
+        .message.bot { justify-content: flex-start; }
+        .message-content { max-width: 70%; padding: 12px 16px; border-radius: 12px; word-wrap: break-word; }
+        .message.user .message-content { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .message.bot .message-content { background: white; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .message-time { font-size: 11px; color: #999; margin-top: 5px; }
+        .typing-indicator { display: none; padding: 12px 16px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .typing-indicator span { display: inline-block; width: 8px; height: 8px; background: #667eea; border-radius: 50%; margin: 0 2px; animation: typing 1.4s infinite; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-10px); } }
+        .input-area { padding: 20px; background: white; border-top: 1px solid #e0e0e0; display: flex; gap: 10px; }
+        .input-area input { flex: 1; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; }
+        .input-area input:focus { outline: none; border-color: #667eea; }
+        .send-btn { padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .send-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        /* Wiki Management Page */
+        .wiki-header { padding: 20px; background: white; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .wiki-header h2 { color: #2c3e50; font-size: 20px; }
+        .wiki-actions { display: flex; gap: 10px; }
+        .btn-secondary { padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .btn-secondary:hover { background: #2980b9; }
+        .wiki-content { flex: 1; overflow-y: auto; padding: 20px; background: #f8f9fa; }
+        .wiki-article { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
+        .wiki-article:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .article-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .article-header h3 { color: #2c3e50; font-size: 18px; margin: 0; flex: 1; }
+        .btn-view { padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px; }
+        .btn-view:hover { background: #5568d3; }
+        .wiki-article h3 { color: #2c3e50; font-size: 18px; margin-bottom: 10px; }
+        .wiki-article p { color: #7f8c8d; font-size: 14px; line-height: 1.6; }
+        .wiki-meta { display: flex; gap: 15px; margin-top: 10px; font-size: 12px; color: #95a5a6; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #95a5a6; }
+        .empty-state h3 { margin-bottom: 10px; }
+        
+        /* Database Viewer Page */
+        .db-header { padding: 20px; background: white; border-bottom: 1px solid #e0e0e0; }
+        .db-header h2 { color: #2c3e50; font-size: 20px; }
+        .db-content { flex: 1; overflow-y: auto; padding: 20px; background: #f8f9fa; }
+        .table-selector { margin-bottom: 20px; }
+        .table-selector select { padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; }
+        .data-table { width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .data-table table { width: 100%; border-collapse: collapse; }
+        .data-table th { background: #34495e; color: white; padding: 12px; text-align: left; font-size: 13px; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #e0e0e0; font-size: 13px; }
+        .data-table tr:hover { background: #f8f9fa; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-inactive { background: #f8d7da; color: #721c24; }
+        
+        /* Modal Styles */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 12px; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .modal-large { max-width: 900px; }
+        .modal-header { padding: 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { color: #2c3e50; font-size: 20px; }
+        .close-btn { font-size: 28px; color: #95a5a6; cursor: pointer; line-height: 1; }
+        .close-btn:hover { color: #2c3e50; }
+        .modal-body { padding: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #34495e; font-weight: 500; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #667eea; }
+        .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+        .btn-secondary { padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .btn-secondary:hover { background: #7f8c8d; }
+        
+        /* Compiler Info Box */
+        .compiler-info { background: #e8f4fd; border-left: 4px solid #2196F3; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        .compiler-info p { margin: 0 0 10px 0; color: #1976D2; font-weight: 500; }
+        .compiler-info ul { margin: 0; padding-left: 20px; color: #424242; }
+        .compiler-info li { margin-bottom: 5px; }
+        
+        /* Wiki Article Preview */
+        .preview-section { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .preview-section h4 { color: #2c3e50; margin: 0 0 10px 0; font-size: 16px; }
+        .preview-field { margin-bottom: 10px; }
+        .preview-field label { font-weight: 600; color: #34495e; font-size: 13px; display: block; margin-bottom: 3px; }
+        .preview-field div { color: #555; font-size: 14px; line-height: 1.5; }
+        .preview-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+        .preview-tag { background: #667eea; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; }
+        .preview-confidence { display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: 600; font-size: 13px; }
+        .confidence-high { background: #d4edda; color: #155724; }
+        .confidence-medium { background: #fff3cd; color: #856404; }
+        .confidence-low { background: #f8d7da; color: #721c24; }
+        
+        /* View Article Detail */
+        .article-detail { line-height: 1.8; }
+        .article-detail h3 { color: #2c3e50; border-bottom: 2px solid #667eea; padding-bottom: 10px; margin-top: 20px; }
+        .article-detail .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .article-detail .meta-item { background: #f8f9fa; padding: 10px; border-radius: 6px; }
+        .article-detail .meta-label { font-size: 12px; color: #7f8c8d; text-transform: uppercase; font-weight: 600; }
+        .article-detail .meta-value { font-size: 14px; color: #2c3e50; margin-top: 5px; font-weight: 500; }
+        .article-detail .content-text { white-space: pre-wrap; background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar" style="display: none;">
+            <div class="sidebar-header">
+                <h1> Chatbot</h1>
+                <p>Enterprise Platform</p>
+            </div>
+            <div class="nav-menu">
+                <div class="nav-item active" onclick="showPage('chat')">
+                    <span class="nav-icon"></span>
+                    <span>Chat</span>
+                </div>
+                <div class="nav-item" onclick="showPage('wiki')">
+                    <span class="nav-icon"></span>
+                    <span>Wiki Management</span>
+                </div>
+                <div class="nav-item" onclick="showPage('database')">
+                    <span class="nav-icon"></span>
+                    <span>Database Viewer</span>
+                </div>
+            </div>
+            <div class="user-section">
+                <div class="user-info" id="userInfo">User: -</div>
+                <button class="logout-btn" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Login Page -->
+            <div class="page login-page active" id="loginPage">
+                <div class="login-card">
+                    <h2>Welcome to Enterprise Chatbot</h2>
+                    <p>Please sign in to continue</p>
+                    
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="Enter username" value="admin">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter password" value="admin123">
+                    </div>
+                    
+                    <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Sign In</button>
+                    
+                    <div class="error-msg" id="errorMsg"></div>
+                    
+                    <div class="test-credentials">
+                        <h4>Test Credentials:</h4>
+                        <p><strong>Local Mode:</strong> Username: <code>admin</code>, Password: <code>admin123</code></p>
+                        <p style="margin-top: 8px; font-size: 11px; color: #6c757d;">Note: LDAP authentication requires configuration in .env file</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Page -->
+            <div class="page" id="chatPage">
+                <div class="chat-header">
+                    <h2> Intelligent Chat</h2>
+                </div>
+                <div class="messages-container" id="messagesContainer">
+                    <div class="message bot">
+                        <div class="message-content">Hello! I am your enterprise AI assistant. How can I help you today?</div>
+                        <div class="message-time" id="welcomeTime"></div>
+                    </div>
+                </div>
+                <div class="typing-indicator" id="typingIndicator">
+                    <span></span><span></span><span></span>
+                </div>
+                <div class="input-area">
+                    <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+
+            <!-- Wiki Management Page -->
+            <div class="page" id="wikiPage">
+                <div class="wiki-header">
+                    <h2> Wiki Knowledge Base</h2>
+                    <div class="wiki-actions">
+                        <button class="btn-secondary" onclick="refreshWiki()">Refresh</button>
+                        <button class="btn-secondary" onclick="showAddWikiModal()">+ Add Article</button>
+                    </div>
+                </div>
+                <div class="wiki-content" id="wikiContent">
+                    <div class="empty-state">
+                        <h3>No articles found</h3>
+                        <p>Click "Add Article" to create your first wiki entry</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Viewer Page -->
+            <div class="page" id="databasePage">
+                <div class="db-header">
+                    <h2> Database Viewer</h2>
+                </div>
+                <div class="db-content">
+                    <div class="table-selector">
+                        <select id="tableSelect" onchange="loadTableData()">
+                            <option value="">Select a table...</option>
+                            <option value="wiki_entries">Wiki Entries</option>
+                            <option value="api_keys">API Keys</option>
+                            <option value="chat_sessions">Chat Sessions</option>
+                        </select>
+                    </div>
+                    <div class="data-table" id="dataTable">
+                        <div class="empty-state">
+                            <h3>Select a table to view data</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Wiki Article Modal -->
+    <div id="addWikiModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>📝 Add New Wiki Article (LLM-Powered)</h2>
+                <span class="close-btn" onclick="closeAddWikiModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="compiler-info">
+                    <p><strong>How it works:</strong> Paste your raw document/text below. The LLM will automatically:</p>
+                    <ul>
+                        <li>✓ Extract key concepts and structure</li>
+                        <li>✓ Generate appropriate entry ID and type</li>
+                        <li>✓ Create summary and tags</li>
+                        <li>✓ Identify relationships to existing articles</li>
+                        <li>✓ Assign confidence score based on content quality</li>
+                    </ul>
+                </div>
+                <form id="addWikiForm">
+                    <div class="form-group">
+                        <label for="wikiRawContent">Raw Document/Text Content *</label>
+                        <textarea id="wikiRawContent" rows="12" placeholder="Paste your raw document, policy text, procedure guide, or any unstructured content here...
+
+Example:
+Annual Leave Policy
+
+All full-time employees are entitled to annual leave based on their length of service.
+
+Leave Entitlement (2024):
+- Tier 1 (0-2 years): 10 days per year
+- Tier 2 (>2-5 years): 15 days per year  
+- Tier 3 (>5 years): 20 days per year
+
+Application Process:
+1. Submit leave request through HR portal at least 2 weeks in advance
+2. Obtain manager approval via workflow system
+3. HR will confirm and update records within 3 business days
+
+Carry-over Policy:
+- Maximum 5 days can be carried over to next year
+- Must be used within first quarter (Q1) of following year
+- Excess days will be forfeited without compensation" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="wikiSourceUrl">Source URL (optional)</label>
+                            <input type="url" id="wikiSourceUrl" placeholder="https://intranet.company.com/docs/policy.pdf">
+                        </div>
+                        <div class="form-group">
+                            <label for="wikiSourceType">Source Type</label>
+                            <select id="wikiSourceType">
+                                <option value="text">Plain Text</option>
+                                <option value="pdf">PDF Document</option>
+                                <option value="webpage">Web Page</option>
+                                <option value="docx">Word Document</option>
+                                <option value="email">Email</option>
+                                <option value="meeting_notes">Meeting Notes</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="wikiSuggestedCategory">Suggested Category (optional hint for LLM)</label>
+                        <select id="wikiSuggestedCategory">
+                            <option value="">Auto-detect by LLM</option>
+                            <option value="policy">Policy/Rule</option>
+                            <option value="procedure">Procedure/Process</option>
+                            <option value="guide">Guide/How-to</option>
+                            <option value="concept">Concept/Definition</option>
+                            <option value="formula">Formula/Calculation</option>
+                            <option value="faq">FAQ/Q&A</option>
+                            <option value="troubleshooting">Troubleshooting</option>
+                            <option value="technical">Technical Documentation</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeAddWikiModal()">Cancel</button>
+                        <button type="submit" class="btn-primary" id="compileBtn">
+                            <span id="compileBtnText">🤖 Compile with LLM</span>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Compilation Result Preview -->
+                <div id="compilationResult" style="display: none; margin-top: 20px;">
+                    <hr>
+                    <h3>📋 Compiled Wiki Entry Preview</h3>
+                    <div id="previewContent"></div>
+                    <div class="form-actions" style="margin-top: 15px;">
+                        <button type="button" class="btn-secondary" onclick="resetCompilation()">Edit Original</button>
+                        <button type="button" class="btn-primary" onclick="saveCompiledArticle()" id="saveBtn">
+                            💾 Save to Database
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Wiki Article Modal -->
+    <div id="viewWikiModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="viewArticleTitle">Wiki Article Details</h2>
+                <span class="close-btn" onclick="closeViewWikiModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="viewArticleContent"></div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

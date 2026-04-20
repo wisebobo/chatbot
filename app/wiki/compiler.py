@@ -103,10 +103,29 @@ class LLMPoweredWikiCompiler:
         
         logger.info(f"Compiling document (source_type={source_type}, length={len(raw_content)})")
         
+        # Step 2: Generate complete JSON structure via LLM with retry
+        max_retries = 3
+        article_data = None
+        
+        for attempt in range(max_retries):
+            try:
+                article_data = await self._generate_wiki_entry_json(raw_content, source_url, suggested_category)
+                if article_data:
+                    logger.info(f"LLM generation successful on attempt {attempt + 1}")
+                    break
+                else:
+                    logger.warning(f"Attempt {attempt + 1}: LLM returned empty/invalid JSON, retrying...")
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    import asyncio
+                    await asyncio.sleep(1)  # Wait before retry
+                continue
+        
+        if not article_data:
+            raise ValueError(f"Failed to generate valid JSON after {max_retries} attempts")
+        
         try:
-            # Step 2: Generate complete JSON structure via LLM
-            article_data = await self._generate_wiki_entry_json(raw_content, source_url, suggested_category)
-            
             # Step 3: Post-process - resolve relationships and generate IDs
             article_data = await self._post_process_article(article_data, raw_content, source_url, source_type, doc_hash)
             
@@ -122,13 +141,13 @@ class LLMPoweredWikiCompiler:
             raise
 
     async def _generate_wiki_entry_json(
-        self, 
-        raw_content: str, 
-        source_url: Optional[str],
+        self,
+        raw_content: str,
+        source_url: Optional[str] = None,
         suggested_category: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Generate complete wiki entry JSON structure using LLM (one-shot)
+        Generate complete wiki entry JSON using LLM in one shot
         
         Uses the optimized prompt to generate all fields in a single call
         """
@@ -219,48 +238,7 @@ class LLMPoweredWikiCompiler:
 {truncated_content}{category_hint}{source_hint}
 
 ### Output Requirement:
-Generate ONLY the JSON object. Ensure:
-- Valid JSON syntax (proper commas, quotes, brackets)
-- All required fields present
-- No extra text before or after JSON
-- Ready for direct database storage
-
-### Example Structure (for reference only - generate based on input):
-{{
-  "entry_id": "conc_example_term",
-  "title": "Example Term Definition",
-  "aliases": ["alternative name", "abbr"],
-  "type": "concept",
-  "content": "# Example Term\\n\\nDetailed explanation...",
-  "summary": "Brief 20-50 word summary.",
-  "parent_ids": [],
-  "related_ids": [
-    {{
-      "suggested_title": "Related Concept",
-      "relation": "related_to"
-    }}
-  ],
-  "tags": ["tag1", "tag2", "tag3"],
-  "sources": [
-    {{
-      "source_id": "doc_xyz123",
-      "file_name": "source_document.pdf",
-      "page": 5,
-      "content_snippet": "Direct quote from source...",
-      "url": "https://example.com/doc"
-    }}
-  ],
-  "confidence": 0.95,
-  "status": "active",
-  "version": 1,
-  "create_time": "2025-10-08T10:30:00",
-  "update_time": "2025-10-08T10:30:00",
-  "feedback": {{
-    "positive": 0,
-    "negative": 0,
-    "comments": []
-  }}
-}}
+Generate ONLY the JSON object. Start with '{{' and end with '}}'. Do NOT include any other text before or after the JSON.
 """
         
         try:
@@ -271,6 +249,11 @@ Generate ONLY the JSON object. Ensure:
             article_data = self._parse_llm_json_response(content)
             
             if not article_data:
+                # Fallback: Try to extract partial JSON and fill missing fields
+                logger.warning("JSON parsing failed, attempting fallback extraction...")
+                article_data = self._extract_fallback_json(content, raw_content, source_url, suggested_category)
+            
+            if not article_data:
                 raise ValueError("Failed to parse valid JSON from LLM response")
             
             logger.info(f"LLM generated entry: {article_data.get('entry_id', 'unknown')}")
@@ -279,6 +262,76 @@ Generate ONLY the JSON object. Ensure:
         except Exception as e:
             logger.error(f"LLM JSON generation failed: {e}")
             raise
+
+    def _extract_fallback_json(
+        self,
+        content: str,
+        raw_content: str,
+        source_url: Optional[str],
+        suggested_category: Optional[str]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Fallback method to extract partial information when JSON parsing fails
+        
+        This is a last resort to salvage useful information from malformed LLM responses
+        """
+        import re
+        
+        try:
+            # Try to extract individual fields using regex
+            entry = {}
+            
+            # Extract entry_id
+            id_match = re.search(r'"entry_id"\s*:\s*"([^"]+)"', content)
+            if id_match:
+                entry['entry_id'] = id_match.group(1)
+            
+            # Extract title
+            title_match = re.search(r'"title"\s*:\s*"([^"]+)"', content)
+            if title_match:
+                entry['title'] = title_match.group(1)
+            
+            # Extract type
+            type_match = re.search(r'"type"\s*:\s*"([^"]+)"', content)
+            if type_match:
+                entry['type'] = type_match.group(1)
+            
+            # If we have at least entry_id and title, create a minimal valid structure
+            if entry.get('entry_id') and entry.get('title'):
+                logger.info("Fallback extraction successful, filling missing fields...")
+                
+                # Fill required fields with defaults
+                entry.setdefault('type', suggested_category or 'concept')
+                entry.setdefault('aliases', [])
+                entry.setdefault('content', raw_content[:2000])
+                entry.setdefault('summary', entry['title'])
+                entry.setdefault('parent_ids', [])
+                entry.setdefault('related_ids', [])
+                entry.setdefault('tags', ['auto-extracted'])
+                entry.setdefault('sources', [{
+                    'source_id': f'doc_{hashlib.md5(raw_content[:50].encode()).hexdigest()[:6]}',
+                    'file_name': 'unknown_document.txt',
+                    'page': None,
+                    'content_snippet': raw_content[:200],
+                    'url': source_url
+                }])
+                entry.setdefault('confidence', 0.7)
+                entry.setdefault('status', 'active')
+                entry.setdefault('version', 1)
+                
+                from datetime import datetime
+                now = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+                entry.setdefault('create_time', now)
+                entry.setdefault('update_time', now)
+                entry.setdefault('feedback', {'positive': 0, 'negative': 0, 'comments': []})
+                entry.setdefault('metadata', {})
+                
+                return entry
+            
+        except Exception as e:
+            logger.error(f"Fallback extraction failed: {e}")
+        
+        return None
 
     def _parse_llm_json_response(self, content: str) -> Optional[Dict[str, Any]]:
         """
@@ -292,29 +345,86 @@ Generate ONLY the JSON object. Ensure:
         """
         import re
         
+        # Clean up common LLM output issues
+        cleaned_content = content.strip()
+        
+        # Remove markdown text before/after JSON
+        # Look for patterns like "Here is the JSON:" or explanatory text
+        json_start = cleaned_content.find('{')
+        json_end = cleaned_content.rfind('}')
+        
+        if json_start != -1 and json_end != -1 and json_end > json_start:
+            cleaned_content = cleaned_content[json_start:json_end + 1]
+        
         try:
-            # Strategy 1: Try direct parsing
-            return json.loads(content.strip())
-        except json.JSONDecodeError:
+            # Strategy 1: Try direct parsing of cleaned content
+            return json.loads(cleaned_content)
+        except json.JSONDecodeError as e:
+            logger.debug(f"Direct JSON parse failed: {e}")
             pass
         
         try:
             # Strategy 2: Extract JSON from markdown code blocks
-            json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
+            json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL | re.IGNORECASE)
             if json_match:
-                return json.loads(json_match.group(1))
-        except json.JSONDecodeError:
+                json_str = json_match.group(1).strip()
+                # Also clean code block content
+                block_start = json_str.find('{')
+                block_end = json_str.rfind('}')
+                if block_start != -1 and block_end != -1:
+                    json_str = json_str[block_start:block_end + 1]
+                return json.loads(json_str)
+        except json.JSONDecodeError as e:
+            logger.debug(f"Code block JSON parse failed: {e}")
             pass
         
         try:
-            # Strategy 3: Find JSON object pattern
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group())
-        except json.JSONDecodeError:
+            # Strategy 3: Find outermost JSON object (handles nested braces)
+            # Count braces to find complete JSON object
+            brace_count = 0
+            start_idx = -1
+            end_idx = -1
+            
+            for i, char in enumerate(content):
+                if char == '{':
+                    if brace_count == 0:
+                        start_idx = i
+                    brace_count += 1
+                elif char == '}':
+                    brace_count -= 1
+                    if brace_count == 0 and start_idx != -1:
+                        end_idx = i
+                        break
+            
+            if start_idx != -1 and end_idx != -1:
+                json_str = content[start_idx:end_idx + 1]
+                return json.loads(json_str)
+        except json.JSONDecodeError as e:
+            logger.debug(f"Brace-matching JSON parse failed: {e}")
             pass
         
-        logger.warning(f"Failed to parse JSON from LLM response. Content preview: {content[:200]}")
+        try:
+            # Strategy 4: Try to fix common JSON issues
+            fixed_content = cleaned_content
+            
+            # Fix trailing commas (common LLM mistake)
+            fixed_content = re.sub(r',\s*([}\]])', r'\1', fixed_content)
+            
+            # Fix unquoted keys (less common but possible)
+            fixed_content = re.sub(r'(\w+)\s*:', r'"\1":', fixed_content)
+            
+            # Fix single quotes to double quotes
+            fixed_content = fixed_content.replace("'", '"')
+            
+            return json.loads(fixed_content)
+        except json.JSONDecodeError as e:
+            logger.debug(f"Fixed JSON parse failed: {e}")
+            pass
+        
+        # All strategies failed
+        logger.warning(f"Failed to parse JSON from LLM response after all strategies.")
+        logger.warning(f"Content preview (first 300 chars): {content[:300]}")
+        logger.warning(f"Content length: {len(content)} chars")
         return None
 
     async def _post_process_article(

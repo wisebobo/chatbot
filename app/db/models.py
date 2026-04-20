@@ -227,3 +227,52 @@ class AuditLog(Base):
             "metadata": self.extra_metadata,  # Return as 'metadata' in API
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class ChatSession(Base):
+    """
+    Chat session model for storing conversation history.
+    
+    Tracks user chat sessions and message history.
+    """
+    __tablename__ = "chat_sessions"
+    
+    # Primary key
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    
+    # Session identifier (UUID format)
+    session_id = Column(String(100), unique=True, nullable=False, index=True)
+    
+    # User information
+    user_id = Column(String(100), nullable=True, index=True)  # Can be anonymous
+    
+    # Session metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    last_activity_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Session status
+    is_active = Column(Boolean, default=True, index=True)
+    
+    # Message count
+    message_count = Column(Integer, default=0)
+    
+    # Session metadata (JSON for flexibility)
+    session_metadata = Column(JSON, default=dict)  # Store additional session info
+    
+    def __repr__(self):
+        return f"<ChatSession(session_id='{self.session_id}', user_id='{self.user_id}', messages={self.message_count})>"
+    
+    def to_dict(self):
+        """Convert to dictionary for API responses."""
+        return {
+            "id": self.id,
+            "session_id": self.session_id,
+            "user_id": self.user_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "last_activity_at": self.last_activity_at.isoformat() if self.last_activity_at else None,
+            "is_active": self.is_active,
+            "message_count": self.message_count,
+            "metadata": self.session_metadata,  # Return as 'metadata' in API
+        }

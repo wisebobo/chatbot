@@ -326,6 +326,279 @@ def create_app() -> FastAPI:
             logger.error(f"Wiki feedback error: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
 
+    # Wiki articles list endpoint
+    @app.get(f"{settings.api.api_prefix}/wiki/articles", tags=["Wiki"])
+    async def list_wiki_articles():
+        """
+        Get list of all wiki articles
+        
+        Returns:
+            List of wiki article summaries
+        """
+        try:
+            from app.db.repositories import WikiRepository
+            from app.db.database import get_db_manager
+            
+            db_manager = get_db_manager()
+            wiki_repo = WikiRepository(db_manager.SessionLocal())
+            
+            # Get all articles using correct method name
+            articles = wiki_repo.list_all(limit=100)
+            
+            result = []
+            for article in articles:
+                result.append({
+                    "entry_id": article.entry_id,
+                    "title": article.title or article.entry_id,
+                    "type": article.type.value if hasattr(article.type, 'value') else str(article.type),
+                    "version": article.version,
+                    "summary": article.summary,
+                    "confidence": article.confidence,
+                    "status": article.status.value if hasattr(article.status, 'value') else str(article.status),
+                    "created_at": article.created_at.isoformat() if article.created_at else None,
+                    "updated_at": article.updated_at.isoformat() if article.updated_at else None,
+                    "content": article.content,  # Include full content for view
+                    "tags": article.tags or [],
+                    "related_ids": article.related_ids or []
+                })
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"List wiki articles error: {e}", exc_info=True)
+            # Return empty list on error
+            return []
+
+    # LLM-powered Wiki compilation endpoint
+    @app.post(f"{settings.api.api_prefix}/wiki/compile", tags=["Wiki"])
+    async def compile_wiki_article(request: dict):
+        """
+        Compile raw document into structured wiki entry using LLM
+        
+        Request Body:
+            raw_content: Raw document text
+            source_url: Optional source URL
+            source_type: Type of source (text, pdf, webpage, etc.)
+            suggested_category: Optional category hint
+            
+        Returns:
+            Compiled wiki article structure
+        """
+        try:
+            from app.wiki.compiler import LLMPoweredWikiCompiler
+            from app.wiki.engine import LocalWikiEngine
+            
+            raw_content = request.get("raw_content", "")
+            source_url = request.get("source_url")
+            source_type = request.get("source_type", "text")
+            suggested_category = request.get("suggested_category")
+            
+            if not raw_content:
+                raise HTTPException(status_code=400, detail="raw_content is required")
+            
+            # Initialize compiler
+            wiki_engine = LocalWikiEngine()
+            compiler = LLMPoweredWikiCompiler(wiki_engine)
+            
+            # Compile document
+            article, operation = await compiler.compile_document(
+                raw_content=raw_content,
+                source_url=source_url,
+                source_type=source_type,
+                suggested_category=suggested_category
+            )
+            
+            # Convert to dict for JSON response
+            result = {
+                "article": {
+                    "entry_id": article.entry_id,
+                    "title": article.title,
+                    "type": article.type.value if hasattr(article.type, 'value') else str(article.type),
+                    "version": article.version,
+                    "summary": article.summary,
+                    "content": article.content,
+                    "tags": article.tags or [],
+                    "sources": [
+                        {
+                            "source_id": src.source_id,
+                            "url": src.url,
+                            "file_name": src.file_name,
+                            "page": src.page,
+                            "content_snippet": src.content_snippet[:200] if src.content_snippet else ""
+                        }
+                        for src in article.sources
+                    ] if article.sources else [],
+                    "related_ids": [
+                        {
+                            "entry_id": rel.entry_id,
+                            "relation": rel.relation.value if hasattr(rel.relation, 'value') else str(rel.relation)
+                        }
+                        for rel in article.related_ids
+                    ] if article.related_ids else [],
+                    "confidence": article.confidence,
+                    "status": article.status.value if hasattr(article.status, 'value') else str(article.status),
+                    "metadata": article.metadata or {}
+                },
+                "operation": operation,
+                "message": f"Document successfully compiled ({operation})"
+            }
+            
+            logger.info(f"Wiki compilation successful: {article.entry_id} ({operation})")
+            return result
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Wiki compilation error: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Compilation failed: {str(e)}")
+
+    # Create wiki article endpoint
+    @app.post(f"{settings.api.api_prefix}/wiki/articles", tags=["Wiki"])
+    async def create_wiki_article(request: dict):
+        """
+        Save a compiled wiki article to database
+        
+        Request Body:
+            Complete wiki article structure from compilation
+        """
+        try:
+            from app.db.repositories import WikiRepository
+            from app.db.database import get_db_manager
+            from app.db.models import WikiEntry
+            from datetime import datetime
+            
+            db_manager = get_db_manager()
+            session = db_manager.SessionLocal()
+            wiki_repo = WikiRepository(session)
+            
+            # Extract article data
+            entry_id = request.get("entry_id")
+            title = request.get("title")
+            article_type = request.get("type", "concept")
+            content = request.get("content", "")
+            summary = request.get("summary", "")
+            tags = request.get("tags", [])
+            confidence = request.get("confidence", 0.8)
+            version = request.get("version", 1)
+            
+            if not entry_id or not title:
+                raise HTTPException(status_code=400, detail="entry_id and title are required")
+            
+            # Check if article already exists
+            existing = wiki_repo.get_by_id(entry_id)
+            
+            if existing:
+                # Update existing article
+                existing.title = title
+                existing.type = article_type
+                existing.content = content
+                existing.summary = summary
+                existing.tags = tags
+                existing.confidence = confidence
+                existing.version = version + 1
+                existing.updated_at = datetime.utcnow()
+                
+                session.commit()
+                logger.info(f"Updated existing wiki article: {entry_id}")
+                
+                return {
+                    "success": True,
+                    "message": "Article updated successfully",
+                    "operation": "updated",
+                    "entry_id": entry_id,
+                    "version": existing.version
+                }
+            else:
+                # Create new article
+                new_article = WikiEntry(
+                    entry_id=entry_id,
+                    title=title,
+                    type=article_type,
+                    content=content,
+                    summary=summary,
+                    tags=tags,
+                    confidence=confidence,
+                    version=version,
+                    status="active",
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow()
+                )
+                
+                session.add(new_article)
+                session.commit()
+                logger.info(f"Created new wiki article: {entry_id}")
+                
+                return {
+                    "success": True,
+                    "message": "Article created successfully",
+                    "operation": "created",
+                    "entry_id": entry_id,
+                    "version": version
+                }
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Create wiki article error: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
+
+    # Database viewer endpoint
+    @app.get(f"{settings.api.api_prefix}/database/{{table_name}}", tags=["Database"])
+    async def get_database_table(table_name: str):
+        """
+        Get data from specified database table
+        
+        Args:
+            table_name: Name of the table to query
+            
+        Returns:
+            List of records from the table
+        """
+        try:
+            from app.db.database import get_db_manager
+            from sqlalchemy import text
+            
+            # Whitelist of allowed tables
+            allowed_tables = ['wiki_entries', 'api_keys', 'chat_sessions']
+            
+            if table_name not in allowed_tables:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Table '{table_name}' is not accessible. Allowed tables: {', '.join(allowed_tables)}"
+                )
+            
+            db_manager = get_db_manager()
+            session = db_manager.SessionLocal()
+            
+            try:
+                # Query all records from the table
+                query = text(f"SELECT * FROM {table_name} LIMIT 100")
+                result = session.execute(query)
+                
+                # Convert to list of dictionaries
+                columns = result.keys()
+                rows = []
+                for row in result.fetchall():
+                    row_dict = {}
+                    for i, col in enumerate(columns):
+                        value = row[i]
+                        # Convert datetime to string
+                        if hasattr(value, 'isoformat'):
+                            value = value.isoformat()
+                        row_dict[col] = value
+                    rows.append(row_dict)
+                
+                return rows
+                
+            finally:
+                session.close()
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Database query error: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
+
     # Initialize skills
     logger.info("Initializing skills...")
     skill_registry.register(ControlMSkill())
