@@ -48,6 +48,7 @@ class ChatResponse(BaseModel):
     response: str
     status: str
     skill_executed: Optional[str] = None
+    wiki_entry_id: Optional[str] = None  # Wiki article ID for feedback (if skill returned wiki results)
     error: Optional[str] = None
 
 
@@ -218,6 +219,7 @@ def create_app() -> FastAPI:
             messages = result.get("messages", [])
             response_text = ""
             skill_executed = None
+            wiki_entry_id = None
             
             if messages:
                 last_message = messages[-1]
@@ -226,15 +228,37 @@ def create_app() -> FastAPI:
                 elif hasattr(last_message, 'content'):
                     response_text = last_message.content
                 
-                # Check for skill execution metadata
-                skill_executed = result.get("skill_executed")
+                # Extract skill executed and wiki entry ID
+                skill_executed = result.get("skill_executed") or result.get("current_skill")  # Try both field names
+                wiki_entry_id = None
+                
+                if not skill_executed:
+                    logger.info(f"[chat_endpoint] skill_executed=None")
+                
+                logger.info(f"[chat_endpoint] result keys: {list(result.keys())}")
+                logger.info(f"[chat_endpoint] skill_executed type: {type(skill_executed)}, value: {skill_executed}")
+                
+                # If wiki_search was executed, extract wiki_entry_id from results
+                if skill_executed == "wiki_search":
+                    skill_result = result.get("skill_result")
+                    logger.info(f"[chat_endpoint] skill_result type: {type(skill_result)}, value: {skill_result}")
+                    
+                    if skill_result and isinstance(skill_result, dict) and skill_result.get("success"):
+                        results = skill_result.get("data", {}).get("results", [])
+                        logger.info(f"[chat_endpoint] Found {len(results)} wiki results")
+                        
+                        if results and len(results) > 0:
+                            # Use the first (most relevant) result's entry_id
+                            wiki_entry_id = results[0].get("entry_id")
+                            logger.info(f"[chat_endpoint] Extracted wiki_entry_id: {wiki_entry_id}")
             
             return ChatResponse(
                 session_id=session_id,
                 request_id=request_id,
                 response=response_text,
                 status="completed",
-                skill_executed=skill_executed
+                skill_executed=skill_executed,
+                wiki_entry_id=wiki_entry_id
             )
             
         except Exception as e:
@@ -360,7 +384,11 @@ def create_app() -> FastAPI:
                     "updated_at": article.updated_at.isoformat() if article.updated_at else None,
                     "content": article.content,  # Include full content for view
                     "tags": article.tags or [],
-                    "related_ids": article.related_ids or []
+                    "related_ids": article.related_ids or [],
+                    # Feedback statistics
+                    "positive_feedback": article.positive_feedback or 0,
+                    "negative_feedback": article.negative_feedback or 0,
+                    "total_feedback": (article.positive_feedback or 0) + (article.negative_feedback or 0)
                 })
             
             return result

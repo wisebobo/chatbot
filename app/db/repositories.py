@@ -186,7 +186,7 @@ class WikiRepository:
         return existing_feedback or feedback
     
     def _update_feedback_counters(self, entry: WikiEntry, old_type: Optional[str], new_type: str):
-        """Update feedback counters on wiki entry."""
+        """Update feedback counters on wiki entry and recalculate confidence."""
         if old_type:
             if old_type == "positive":
                 entry.positive_feedback -= 1
@@ -200,11 +200,48 @@ class WikiRepository:
         
         entry.feedback_count = entry.positive_feedback + entry.negative_feedback
         
-        # Recalculate confidence based on feedback
-        if entry.feedback_count > 0:
-            positive_ratio = entry.positive_feedback / entry.feedback_count
-            # Blend original confidence with feedback ratio
-            entry.confidence = (entry.confidence * 0.7) + (positive_ratio * 0.3)
+        # Automatically recalculate confidence based on feedback ratio
+        self._recalculate_confidence(entry)
+    
+    def _recalculate_confidence(self, entry: WikiEntry):
+        """
+        Recalculate confidence score based on user feedback.
+        
+        Formula: confidence = positive / (positive + negative)
+        - Starts at 1.0 (default)
+        - Adjusts based on feedback ratio
+        - Minimum feedback threshold to avoid over-adjustment with few votes
+        """
+        total_feedback = entry.positive_feedback + entry.negative_feedback
+        
+        if total_feedback == 0:
+            # No feedback yet, keep original confidence
+            return
+        
+        # Calculate feedback ratio
+        feedback_ratio = entry.positive_feedback / total_feedback
+        
+        # Apply smoothing to avoid extreme values with few votes
+        # Use Bayesian average: (positive + 1) / (total + 2)
+        # This pulls towards 0.5 when we have little data
+        smoothed_confidence = (entry.positive_feedback + 1) / (total_feedback + 2)
+        
+        # Blend with original confidence (gradual adjustment)
+        # Weight decreases as we get more feedback
+        original_weight = max(0.3, 1.0 - (total_feedback * 0.05))  # Min 30% weight
+        feedback_weight = 1.0 - original_weight
+        
+        # Calculate new confidence
+        new_confidence = (entry.confidence * original_weight) + (smoothed_confidence * feedback_weight)
+        
+        # Clamp to valid range [0.1, 1.0]
+        entry.confidence = max(0.1, min(1.0, new_confidence))
+        
+        logger.info(
+            f"Recalculated confidence for {entry.entry_id}: "
+            f"{entry.confidence:.2f} (positive={entry.positive_feedback}, "
+            f"negative={entry.negative_feedback}, total={total_feedback})"
+        )
     
     def get_low_confidence_entries(self, threshold: float = 0.6, limit: int = 20) -> List[WikiEntry]:
         """Get entries with low confidence scores for review."""
@@ -214,6 +251,42 @@ class WikiRepository:
         ).order_by(
             WikiEntry.confidence.asc()
         ).limit(limit).all()
+    
+    def get_feedback_summary(self, entry_id: str) -> Dict[str, Any]:
+        """
+        Get feedback summary for a wiki entry.
+        
+        Args:
+            entry_id: The entry ID
+            
+        Returns:
+            Dictionary with feedback statistics
+        """
+        entry = self.get_by_id(entry_id)
+        if not entry:
+            return None
+        
+        # Count feedback by type
+        positive_count = self.session.query(func.count(WikiFeedback.id)).filter(
+            WikiFeedback.entry_id == entry_id,
+            WikiFeedback.feedback_type == "positive"
+        ).scalar() or 0
+        
+        negative_count = self.session.query(func.count(WikiFeedback.id)).filter(
+            WikiFeedback.entry_id == entry_id,
+            WikiFeedback.feedback_type == "negative"
+        ).scalar() or 0
+        
+        total_count = positive_count + negative_count
+        
+        return {
+            "entry_id": entry_id,
+            "positive": positive_count,
+            "negative": negative_count,
+            "total": total_count,
+            "ratio": positive_count / total_count if total_count > 0 else 0,
+            "confidence": entry.confidence
+        }
 
 
 class APIKeyRepository:

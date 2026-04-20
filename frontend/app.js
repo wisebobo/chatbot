@@ -1,7 +1,10 @@
 ﻿const API_BASE_URL = 'http://localhost:8000';
+
+// Global variables
 let sessionId = null;
 let currentUser = null;
 let authToken = null;
+let messageFeedbackMap = new Map(); // Track feedback status for each message
 
 // Simple local authentication for testing
 const TEST_USERS = {
@@ -155,7 +158,7 @@ async function sendMessage() {
 
         if (response.ok) {
             const data = await response.json();
-            addMessage(data.response, 'bot');
+            addMessage(data.response, 'bot', data.wiki_entry_id);
             if (data.session_id) {
                 sessionId = data.session_id;
             }
@@ -171,7 +174,7 @@ async function sendMessage() {
 }
 
 // Add Message to Chat
-function addMessage(text, sender) {
+function addMessage(text, sender, wikiEntryId = null) {
     const container = document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}`;
@@ -186,8 +189,94 @@ function addMessage(text, sender) {
     
     messageDiv.appendChild(contentDiv);
     messageDiv.appendChild(timeDiv);
+    
+    // Add feedback buttons for bot messages
+    if (sender === 'bot' && wikiEntryId) {
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'feedback-buttons';
+        
+        const likeBtn = document.createElement('button');
+        likeBtn.className = 'feedback-btn like';
+        likeBtn.innerHTML = '👍';
+        likeBtn.title = 'Helpful';
+        likeBtn.onclick = () => submitFeedback(wikiEntryId, true, likeBtn, dislikeBtn, feedbackDiv);
+        
+        const dislikeBtn = document.createElement('button');
+        dislikeBtn.className = 'feedback-btn dislike';
+        dislikeBtn.innerHTML = '👎';
+        dislikeBtn.title = 'Not Helpful';
+        dislikeBtn.onclick = () => submitFeedback(wikiEntryId, false, dislikeBtn, likeBtn, feedbackDiv);
+        
+        feedbackDiv.appendChild(likeBtn);
+        feedbackDiv.appendChild(dislikeBtn);
+        messageDiv.appendChild(feedbackDiv);
+        
+        // Store reference for this message
+        messageFeedbackMap.set(messageDiv, { wikiEntryId, likeBtn, dislikeBtn });
+    }
+    
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
+}
+
+// Submit Feedback for Wiki Article
+async function submitFeedback(wikiEntryId, isPositive, clickedBtn, otherBtn, feedbackDiv) {
+    // Check if already submitted feedback for this message
+    const messageId = Array.from(messageFeedbackMap.entries())
+        .find(([_, data]) => data.wikiEntryId === wikiEntryId && 
+                           (data.likeBtn === clickedBtn || data.dislikeBtn === clickedBtn))?.[0];
+    
+    if (messageId && messageFeedbackMap.get(messageId)?.submitted) {
+        console.log('Feedback already submitted for this entry');
+        return;
+    }
+    
+    try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (authToken && !authToken.startsWith('test-token')) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/wiki/feedback`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                entry_id: wikiEntryId,
+                is_positive: isPositive,
+                comment: null  // Optional comment can be added later
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Update UI to show feedback was submitted
+            clickedBtn.classList.add(isPositive ? 'selected-like' : 'selected-dislike');
+            otherBtn.disabled = true;
+            otherBtn.style.opacity = '0.5';
+            otherBtn.style.cursor = 'not-allowed';
+            
+            // Add status message
+            const statusSpan = document.createElement('span');
+            statusSpan.className = 'feedback-status';
+            statusSpan.textContent = isPositive ? '✓ Thanks for your feedback!' : '✓ Thanks, we\'ll improve this!';
+            feedbackDiv.appendChild(statusSpan);
+            
+            // Mark as submitted
+            if (messageId) {
+                messageFeedbackMap.get(messageId).submitted = true;
+            }
+            
+            console.log('Feedback submitted successfully:', data);
+        } else {
+            const error = await response.json();
+            console.error('Feedback submission failed:', error);
+            alert('Failed to submit feedback. Please try again.');
+        }
+    } catch (error) {
+        console.error('Submit feedback error:', error);
+        alert('Network error. Please check your connection and try again.');
+    }
 }
 
 // Show/Hide Typing Indicator
@@ -233,6 +322,11 @@ async function loadWikiArticles() {
                 const confidenceClass = article.confidence >= 0.9 ? 'confidence-high' : 
                                        article.confidence >= 0.7 ? 'confidence-medium' : 'confidence-low';
                 
+                // Feedback statistics
+                const positiveFeedback = article.positive_feedback || 0;
+                const negativeFeedback = article.negative_feedback || 0;
+                const totalFeedback = positiveFeedback + negativeFeedback;
+                
                 html += `
                     <div class="wiki-article">
                         <div class="article-header">
@@ -244,6 +338,11 @@ async function loadWikiArticles() {
                             <span>Type: ${article.type || 'N/A'}</span>
                             <span>Version: ${article.version || '1'}</span>
                             <span class="preview-confidence ${confidenceClass}">Confidence: ${confidencePercent}%</span>
+                        </div>
+                        <div class="wiki-feedback-stats" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0; display: flex; gap: 15px; font-size: 12px;">
+                            <span style="color: #27ae60;">👍 Helpful: ${positiveFeedback}</span>
+                            <span style="color: #e74c3c;">👎 Not Helpful: ${negativeFeedback}</span>
+                            <span style="color: #7f8c8d;">Total Feedback: ${totalFeedback}</span>
                         </div>
                     </div>
                 `;
