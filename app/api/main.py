@@ -197,6 +197,7 @@ def create_app() -> FastAPI:
             # Prepare input state
             initial_state = {
                 "messages": [{"role": "user", "content": request_data.message}],
+                "user_input": request_data.message,  # Add user_input for intent recognition
                 "session_id": session_id,
                 "request_id": request_id,
                 "user_id": request_data.user_id,

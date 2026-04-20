@@ -17,7 +17,7 @@ try {
     $answer = Read-Host "是否要启动后端服务？(y/n)"
     if ($answer -eq 'y' -or $answer -eq 'Y') {
         Write-Host "正在启动后端服务..." -ForegroundColor Yellow
-        Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD'; python main.py"
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD'; cd ..; python main.py"
         Write-Host "等待后端服务启动..." -ForegroundColor Yellow
         Start-Sleep -Seconds 5
     }
@@ -25,7 +25,7 @@ try {
 
 Write-Host ""
 Write-Host "打开前端测试页面..." -ForegroundColor Green
-Start-Process "file:///$PWD/frontend/index.html"
+Start-Process "file:///$PWD/index.html"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
@@ -37,5 +37,5 @@ Write-Host "3. 输入消息并按 Enter 发送" -ForegroundColor White
 Write-Host "4. 查看右下角的 Session ID" -ForegroundColor White
 Write-Host ""
 Write-Host "后端 API 地址: http://localhost:8000" -ForegroundColor Cyan
-Write-Host "前端页面路径: $PWD\frontend\index.html" -ForegroundColor Cyan
+Write-Host "前端页面路径: $PWD\index.html" -ForegroundColor Cyan
 Write-Host ""

@@ -12,6 +12,7 @@ def main():
         workers=settings.api.workers,
         reload=settings.api.reload,
         log_level=settings.monitoring.log_level.lower(),
+        access_log=True,  # Enable HTTP access logs
     )
 
 

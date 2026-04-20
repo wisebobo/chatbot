@@ -30,6 +30,9 @@ INTENT_CACHE = {}  # Simple in-memory cache: {hash: {"routing": ..., "timestamp"
 INTENT_CACHE_TTL = 3600  # Cache TTL in seconds (1 hour)
 INTENT_CACHE_MAX_SIZE = 1000  # Maximum cache entries
 
+# Clear cache on module reload (for development)
+logger.info("[intent_recognition] Intent cache initialized (cleared)")
+
 
 def _get_intent_cache_key(user_input: str) -> str:
     """Generate cache key from user input"""
@@ -119,6 +122,9 @@ async def intent_recognition_node(state: AgentState) -> Dict[str, Any]:
         f"- {s.name}: {s.description}"
         for s in skill_registry.get_all_skills().values()
     )
+    
+    # Log the skill descriptions being sent to LLM (for debugging routing issues)
+    logger.info(f"[intent_recognition] Available skills: {', '.join(skill_names)}")
 
     messages = [
         SystemMessage(content=INTENT_SYSTEM_PROMPT.format(skill_list=skill_descriptions)),
@@ -176,6 +182,23 @@ async def intent_recognition_node(state: AgentState) -> Dict[str, Any]:
             "context": {**state.context, "intent_params": parsed.get("params", {})},
         }
         
+        # Log routing decision clearly
+        confidence_pct = intent_result["confidence_score"] * 100
+        if routing == "direct_reply":
+            logger.info(
+                f"[intent_recognition] 📝 Direct Reply (no skill needed) | "
+                f"Intent: {intent_result['detected_intent']} | "
+                f"Confidence: {confidence_pct:.1f}% | "
+                f"Session: {state.session_id}"
+            )
+        else:
+            logger.info(
+                f"[intent_recognition] 🚀 Routing to Skill: '{routing}' | "
+                f"Intent: {intent_result['detected_intent']} | "
+                f"Confidence: {confidence_pct:.1f}% | "
+                f"Session: {state.session_id}"
+            )
+        
         # Cache the result
         _cache_intent(cache_key, intent_result)
         
@@ -219,7 +242,13 @@ async def skill_execution_node(state: AgentState) -> Dict[str, Any]:
     - Dynamic human approval support
     """
     skill_name = state.routing_decision
-    logger.info(f"[skill_execution] skill={skill_name}, session={state.session_id}")
+    
+    # Log skill execution start
+    logger.info(
+        f"[skill_execution] ⚡ Executing Skill: '{skill_name}' | "
+        f"Session: {state.session_id} | "
+        f"Params: {state.context.get('intent_params', {})}"
+    )
 
     skill = skill_registry.get(skill_name)
     if not skill:
@@ -301,13 +330,31 @@ async def skill_execution_node(state: AgentState) -> Dict[str, Any]:
                 retriable=True
             ) from e
     
+    # Wrap with circuit breaker
+    @skill_breaker
+    async def execute_with_circuit_breaker():
+        return await execute_skill_with_retry()
+    
     try:
         # Execute with circuit breaker and retry
-        output = await skill_breaker(execute_skill_with_retry)
+        output = await execute_with_circuit_breaker()
         
         execution.status = "success"
         execution.output = output.data
         execution.error_message = None
+
+        # Calculate duration
+        if execution.started_at and execution.finished_at:
+            duration = (execution.finished_at - execution.started_at).total_seconds()
+        else:
+            duration = 0.0
+
+        # Log successful skill execution
+        logger.info(
+            f"[skill_execution] ✅ Skill '{skill_name}' completed successfully | "
+            f"Session: {state.session_id} | "
+            f"Duration: {duration:.2f}s"
+        )
 
         return {
             "skill_result": {"success": True, "data": output.data},
@@ -351,7 +398,17 @@ async def response_generation_node(state: AgentState) -> Dict[str, Any]:
     Response generation node
     Generates the final natural language reply based on execution results
     """
-    logger.info(f"[response_generation] session={state.session_id}")
+    # Determine if this is a direct reply or after skill execution
+    if state.routing_decision == "direct_reply":
+        logger.info(
+            f"[response_generation] 💬 Generating Direct Reply | "
+            f"Session: {state.session_id}"
+        )
+    else:
+        logger.info(
+            f"[response_generation] 💬 Generating Response (after skill: {state.routing_decision}) | "
+            f"Session: {state.session_id}"
+        )
 
     llm = get_llm_adapter()
 
