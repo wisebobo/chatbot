@@ -179,18 +179,21 @@ function addMessage(text, sender, wikiEntryId = null) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}`;
     
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-    contentDiv.textContent = text;
-    
+    // Create time element (displayed at top-left of message)
     const timeDiv = document.createElement('div');
     timeDiv.className = 'message-time';
     timeDiv.textContent = getCurrentTime();
     
-    messageDiv.appendChild(contentDiv);
-    messageDiv.appendChild(timeDiv);
+    // Create content element
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.textContent = text;
     
-    // Add feedback buttons for bot messages
+    // Append time first, then content
+    messageDiv.appendChild(timeDiv);
+    messageDiv.appendChild(contentDiv);
+    
+    // Add feedback buttons for bot messages (below the content)
     if (sender === 'bot' && wikiEntryId) {
         const feedbackDiv = document.createElement('div');
         feedbackDiv.className = 'feedback-buttons';
